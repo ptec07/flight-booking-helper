@@ -165,6 +165,24 @@ function App() {
         </div>
       </section>
 
+      <section className="insight-strip" aria-label="여행 준비 요약">
+        <article>
+          <span>01</span>
+          <strong>검색</strong>
+          <p>노선과 날짜를 입력하세요.</p>
+        </article>
+        <article>
+          <span>02</span>
+          <strong>비교</strong>
+          <p>항공권·날씨·환율을 같이 봅니다.</p>
+        </article>
+        <article>
+          <span>03</span>
+          <strong>저장</strong>
+          <p>마음에 드는 항공편을 보관하세요.</p>
+        </article>
+      </section>
+
       <div className="app-layout">
         <div className="primary-panel">
           <section className="search-card" aria-label="항공권 검색 폼">
@@ -224,6 +242,19 @@ function App() {
         </button>
         {error ? <p className="error-message">{error}</p> : null}
       </section>
+
+          <section className="flight-map-card" aria-label="선택한 여정 미리보기">
+            <div>
+              <p className="eyebrow">Route map</p>
+              <h2>{origin} 출발 · {destination} 도착</h2>
+              <p>출발일 {departureDate || '선택 전'} · {tripType === 'round-trip' ? '왕복' : '편도'}</p>
+            </div>
+            <div className="route-visual" aria-hidden="true">
+              <span>{origin}</span>
+              <i />
+              <span>{destination}</span>
+            </div>
+          </section>
         </div>
 
         <div className="secondary-panel">
@@ -234,7 +265,12 @@ function App() {
           <h2>추천 항공권</h2>
         </div>
         {offers.length === 0 ? (
-          <p className="empty">조건을 입력하고 검색해보세요.</p>
+          <div className="empty-preview">
+            <div className="preview-plane" aria-hidden="true">✈</div>
+            <strong>검색하면 이곳에 추천 항공권이 뜹니다.</strong>
+            <p>{origin}에서 {destination}까지, 가격·시간·예약 링크를 한눈에 비교하세요.</p>
+            <span>예상 카드 · 항공사 · 시간 · 가격 · 상세 보기</span>
+          </div>
         ) : (
           <div className="offer-list">
             {offers.map((offer) => (

@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+
+# Env / secrets
+.env
+.env.*
+backend/.env
+backend/.env.*
+frontend/.env
+frontend/.env.*
+!.env.example
+!backend/.env.example
+!frontend/.env.example
+
+# Node / frontend build
+node_modules/
+dist/
+.vercel/
+coverage/
+*.tsbuildinfo
+frontend/*.js
+frontend/*.d.ts
+
+# Local
+.DS_Store

@@ -165,7 +165,9 @@ function App() {
         </div>
       </section>
 
-      <section className="search-card" aria-label="항공권 검색 폼">
+      <div className="app-layout">
+        <div className="primary-panel">
+          <section className="search-card" aria-label="항공권 검색 폼">
         <div className="section-heading">
           <p className="eyebrow">Search</p>
           <h2>여정 입력</h2>
@@ -222,6 +224,40 @@ function App() {
         </button>
         {error ? <p className="error-message">{error}</p> : null}
       </section>
+        </div>
+
+        <div className="secondary-panel">
+
+      <section className="results-card" aria-label="항공권 후보">
+        <div className="section-heading">
+          <p className="eyebrow">Offers</p>
+          <h2>추천 항공권</h2>
+        </div>
+        {offers.length === 0 ? (
+          <p className="empty">조건을 입력하고 검색해보세요.</p>
+        ) : (
+          <div className="offer-list">
+            {offers.map((offer) => (
+              <article className="offer-card" key={offer.id} aria-label={`${offer.airline} ${offer.origin} ${offer.destination}`}>
+                <div>
+                  <strong>{offer.airline}</strong>
+                  <p>{offer.origin} → {offer.destination}</p>
+                  <p>{formatFlightTime(offer)}</p>
+                  <small>{offer.stops === 0 ? '직항' : `${offer.stops}회 경유`} · 예약 사이트 연결</small>
+                  <div className="booking-links">
+                    <a href={bookingUrl(offer, 'google')} target="_blank" rel="noreferrer">Google Flights에서 보기</a>
+                    <a href={bookingUrl(offer, 'skyscanner')} target="_blank" rel="noreferrer">Skyscanner에서 보기</a>
+                  </div>
+                </div>
+                <div className="offer-action">
+                  <b>{formatCurrency(offer.price, offer.currency)}</b>
+                  <button type="button" className="ghost-button" onClick={() => setSelectedOffer(offer)}>상세 보기</button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
 
       {tripContext ? (
         <section className="context-card" aria-label="여행 체크">
@@ -263,37 +299,6 @@ function App() {
         </section>
       ) : null}
 
-      <section className="results-card" aria-label="항공권 후보">
-        <div className="section-heading">
-          <p className="eyebrow">Offers</p>
-          <h2>추천 항공권</h2>
-        </div>
-        {offers.length === 0 ? (
-          <p className="empty">조건을 입력하고 검색해보세요.</p>
-        ) : (
-          <div className="offer-list">
-            {offers.map((offer) => (
-              <article className="offer-card" key={offer.id} aria-label={`${offer.airline} ${offer.origin} ${offer.destination}`}>
-                <div>
-                  <strong>{offer.airline}</strong>
-                  <p>{offer.origin} → {offer.destination}</p>
-                  <p>{formatFlightTime(offer)}</p>
-                  <small>{offer.stops === 0 ? '직항' : `${offer.stops}회 경유`} · 예약 사이트 연결</small>
-                  <div className="booking-links">
-                    <a href={bookingUrl(offer, 'google')} target="_blank" rel="noreferrer">Google Flights에서 보기</a>
-                    <a href={bookingUrl(offer, 'skyscanner')} target="_blank" rel="noreferrer">Skyscanner에서 보기</a>
-                  </div>
-                </div>
-                <div className="offer-action">
-                  <b>{formatCurrency(offer.price, offer.currency)}</b>
-                  <button type="button" className="ghost-button" onClick={() => setSelectedOffer(offer)}>상세 보기</button>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
-
       {favorites.length > 0 ? (
         <section className="saved-card" aria-label="저장한 항공편">
           <div className="saved-header">
@@ -323,6 +328,8 @@ function App() {
           </div>
         </section>
       ) : null}
+        </div>
+      </div>
 
       {selectedOffer ? (
         <div className="modal-backdrop" role="presentation">

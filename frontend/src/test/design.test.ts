@@ -14,4 +14,20 @@ describe('visual design contract', () => {
     expect(css).toContain('max-width: 1120px')
     expect(css).not.toContain('letter-spacing: -0.06em')
   })
+
+  it('defines an app-like responsive layout for phone, tablet, and desktop', () => {
+    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf-8')
+
+    expect(css).toContain('.app-layout')
+    expect(css).toContain('.primary-panel')
+    expect(css).toContain('.secondary-panel')
+    expect(css).toContain('grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr)')
+    expect(css).toContain('position: sticky')
+    expect(css).toContain('top: 24px')
+    expect(css).toContain('@media (max-width: 1024px)')
+    expect(css).toContain('grid-template-columns: 1fr')
+    expect(css).toContain('@media (max-width: 480px)')
+    expect(css).toContain('min-height: 44px')
+    expect(css).toContain('max-height: min(84vh, 720px)')
+  })
 })

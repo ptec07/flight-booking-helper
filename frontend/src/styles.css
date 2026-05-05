@@ -26,9 +26,32 @@ body {
 }
 
 .page-shell {
+  width: min(100% - 24px, 1180px);
   max-width: 1120px;
   margin: 0 auto;
-  padding: 34px 18px 56px;
+  padding: clamp(16px, 3vw, 34px) 0 56px;
+}
+
+.app-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
+  gap: clamp(14px, 2.4vw, 22px);
+  align-items: start;
+}
+
+.primary-panel,
+.secondary-panel {
+  min-width: 0;
+}
+
+.secondary-panel {
+  position: sticky;
+  top: 24px;
+  display: grid;
+  gap: 18px;
+  max-height: min(84vh, 720px);
+  overflow: auto;
+  padding-right: 2px;
 }
 
 .hero-card,
@@ -43,6 +66,13 @@ body {
   padding: clamp(20px, 4vw, 32px);
   margin-bottom: 18px;
   backdrop-filter: blur(10px);
+}
+
+.app-layout .search-card,
+.app-layout .context-card,
+.app-layout .results-card,
+.app-layout .saved-card {
+  margin-bottom: 0;
 }
 
 .hero-card {
@@ -170,7 +200,7 @@ h2 {
 
 .input-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin: 20px 0 18px;
 }
@@ -203,6 +233,7 @@ select:focus {
 }
 
 button {
+  min-height: 44px;
   border: 0;
   border-radius: 18px;
   background: linear-gradient(135deg, var(--sky-500), #38bdf8);
@@ -488,6 +519,19 @@ button:disabled {
   gap: 10px;
 }
 
+@media (max-width: 1024px) {
+  .app-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .secondary-panel {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+}
+
 @media (max-width: 900px) {
   .hero-card {
     align-items: flex-start;
@@ -540,5 +584,43 @@ button:disabled {
   .offer-card {
     align-items: flex-start;
     flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-shell {
+    width: min(100% - 16px, 1180px);
+    padding-top: 10px;
+  }
+
+  .hero-card,
+  .search-card,
+  .context-card,
+  .results-card,
+  .saved-card {
+    border-radius: 22px;
+    padding: 16px;
+  }
+
+  .route-chips,
+  .booking-links,
+  .modal-actions,
+  .saved-actions,
+  .saved-tools {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .chip-button,
+  .booking-links a,
+  .ghost-button,
+  button {
+    width: 100%;
+  }
+
+  .detail-modal {
+    max-height: min(84vh, 720px);
+    overflow: auto;
+    padding: 18px;
   }
 }

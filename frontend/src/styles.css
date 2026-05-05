@@ -18,6 +18,7 @@
 body {
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background:
     radial-gradient(circle at top left, var(--sky-100) 0, transparent 34%),
@@ -80,6 +81,13 @@ body {
 .primary-panel {
   display: grid;
   gap: 18px;
+}
+
+.search-card,
+.results-card,
+.context-card,
+.saved-card {
+  scroll-margin-top: 12px;
 }
 
 .hero-card {
@@ -654,6 +662,10 @@ button:disabled {
   gap: 10px;
 }
 
+.mobile-action-bar {
+  display: none;
+}
+
 @media (max-width: 1024px) {
   .app-layout {
     grid-template-columns: 1fr;
@@ -705,13 +717,54 @@ button:disabled {
 
 @media (max-width: 640px) {
   .page-shell {
-    padding: 18px 12px 42px;
+    width: min(100% - 24px, 430px);
+    padding: 12px 0 calc(104px + env(safe-area-inset-bottom));
+  }
+
+  .hero-card {
+    min-height: auto;
+    gap: 14px;
+  }
+
+  h1 {
+    font-size: clamp(2.35rem, 15vw, 3.35rem);
+  }
+
+  .api-badges span {
+    padding: 7px 10px;
+    font-size: 0.78rem;
+  }
+
+  .insight-strip {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin: 12px 0;
+  }
+
+  .insight-strip article {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    column-gap: 12px;
+    min-height: auto;
+    padding: 14px;
+  }
+
+  .insight-strip strong,
+  .insight-strip p {
+    margin-top: 0;
   }
 
   .input-grid,
   .context-grid,
   .forecast-list {
     grid-template-columns: 1fr;
+  }
+
+  .trip-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
   }
 
   .offer-card,
@@ -724,12 +777,54 @@ button:disabled {
     align-items: flex-start;
     flex-direction: column;
   }
+
+  .mobile-action-bar {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 0;
+    z-index: 30;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid rgba(186, 230, 253, 0.95);
+    border-radius: 22px 22px 0 0;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 -18px 42px rgba(15, 23, 42, 0.16);
+    padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+    backdrop-filter: blur(14px);
+  }
+
+  .mobile-action-bar strong,
+  .mobile-action-bar span {
+    display: block;
+  }
+
+  .mobile-action-bar strong {
+    color: var(--ink);
+    font-size: 0.95rem;
+  }
+
+  .mobile-action-bar span {
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 800;
+    margin-top: 2px;
+  }
+
+  .mobile-action-bar button {
+    min-width: 112px;
+    width: auto;
+    border-radius: 16px;
+    padding: 12px 16px;
+  }
 }
 
 @media (max-width: 480px) {
   .page-shell {
-    width: min(100% - 16px, 1180px);
-    padding-top: 10px;
+    width: min(100% - 16px, 430px);
+    padding-top: 8px;
   }
 
    .hero-card,

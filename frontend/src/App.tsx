@@ -367,6 +367,16 @@ function App() {
         </div>
       </div>
 
+      <div className="mobile-action-bar" aria-label="모바일 빠른 실행">
+        <div>
+          <strong>{origin} 출발</strong>
+          <span>{destination} 도착 · {tripType === 'round-trip' ? '왕복' : '편도'} · 성인 {Number(adults) || 1}명</span>
+        </div>
+        <button type="button" aria-label="모바일 항공권 검색" onClick={handleSearch} disabled={isLoading}>
+          {isLoading ? '검색 중' : '검색하기'}
+        </button>
+      </div>
+
       {selectedOffer ? (
         <div className="modal-backdrop" role="presentation">
           <section className="detail-modal" role="dialog" aria-modal="true" aria-label="항공권 상세">

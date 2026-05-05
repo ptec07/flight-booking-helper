@@ -12,6 +12,15 @@ describe('deployment configuration', () => {
     expect(pkg.scripts.build).toContain('vite build')
   })
 
+  it('ships a real mobile viewport shell for phone-sized webapps', () => {
+    const html = readFileSync(resolve(__dirname, '../../index.html'), 'utf-8')
+
+    expect(html).toContain('<meta name="viewport"')
+    expect(html).toContain('width=device-width')
+    expect(html).toContain('initial-scale=1')
+    expect(html).toContain('<title>SkyTrip</title>')
+  })
+
   it('documents Render backend deployment without frontend secrets', () => {
     const render = readFileSync(resolve(__dirname, '../../../render.yaml'), 'utf-8')
     const readme = readFileSync(resolve(__dirname, '../../../README.md'), 'utf-8')

@@ -40,4 +40,15 @@ describe('visual design contract', () => {
     expect(css).toContain('grid-template-columns: repeat(3, minmax(0, 1fr))')
     expect(css).toContain('linear-gradient(135deg, #0284c7')
   })
+
+  it('defines mobile app affordances: compact hero, bottom action bar, and safe-area padding', () => {
+    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf-8')
+
+    expect(css).toContain('.mobile-action-bar')
+    expect(css).toContain('position: fixed')
+    expect(css).toContain('bottom: 0')
+    expect(css).toContain('env(safe-area-inset-bottom)')
+    expect(css).toContain('min-height: 100dvh')
+    expect(css).toContain('scroll-margin-top: 12px')
+  })
 })

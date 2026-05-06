@@ -70,6 +70,10 @@ describe('Flight Booking Helper app', () => {
     expect(screen.getByText('연동 상태')).toBeInTheDocument()
     expect(screen.getByText('Aviasales')).toBeInTheDocument()
     expect(screen.getByText('Open-Meteo')).toBeInTheDocument()
+    expect(screen.queryByLabelText('여행 준비 요약')).not.toBeInTheDocument()
+    expect(screen.queryByText('도시명만 입력해도 공항을 찾습니다.')).not.toBeInTheDocument()
+    expect(screen.queryByText('항공권·날씨·환율을 같이 봅니다.')).not.toBeInTheDocument()
+    expect(screen.queryByText('마음에 드는 항공편을 보관하세요.')).not.toBeInTheDocument()
     expect(screen.queryByText('백업 데이터')).not.toBeInTheDocument()
   })
 

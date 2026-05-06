@@ -353,24 +353,6 @@ function App() {
         </div>
       </section>
 
-      <section className="insight-strip" aria-label="여행 준비 요약">
-        <article>
-          <span>01</span>
-          <strong>검색</strong>
-          <p>도시명만 입력해도 공항을 찾습니다.</p>
-        </article>
-        <article>
-          <span>02</span>
-          <strong>비교</strong>
-          <p>항공권·날씨·환율을 같이 봅니다.</p>
-        </article>
-        <article>
-          <span>03</span>
-          <strong>저장</strong>
-          <p>마음에 드는 항공편을 보관하세요.</p>
-        </article>
-      </section>
-
       <div className="app-layout">
         <div className="primary-panel">
           <section className="search-card" aria-label="항공권 검색 폼">

@@ -31,13 +31,12 @@ describe('visual design contract', () => {
     expect(css).toContain('max-height: min(84vh, 720px)')
   })
 
-  it('adds clearly visible dashboard-only surfaces so the redesign is not subtle', () => {
+  it('keeps visible dashboard surfaces while removing the old hero insight strip', () => {
     const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf-8')
 
-    expect(css).toContain('.insight-strip')
+    expect(css).not.toContain('.insight-strip')
     expect(css).toContain('.flight-map-card')
     expect(css).toContain('.empty-preview')
-    expect(css).toContain('grid-template-columns: repeat(3, minmax(0, 1fr))')
     expect(css).toContain('linear-gradient(135deg, #0284c7')
   })
 

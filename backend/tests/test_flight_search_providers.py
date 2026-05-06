@@ -28,6 +28,7 @@ class FakeKiwiClient:
 
 
 def test_search_flights_prefers_kiwi_tequila_when_key_is_configured(monkeypatch):
+    monkeypatch.delenv("TRAVELPAYOUTS_API_TOKEN", raising=False)
     monkeypatch.setenv("KIWI_TEQUILA_API_KEY", "kiwi-key")
     monkeypatch.delenv("AMADEUS_CLIENT_ID", raising=False)
     monkeypatch.delenv("AMADEUS_CLIENT_SECRET", raising=False)
@@ -53,6 +54,7 @@ def test_search_flights_falls_back_when_kiwi_tequila_fails(monkeypatch):
         def search_flight_offers(self, query):
             raise RuntimeError("upstream unavailable")
 
+    monkeypatch.delenv("TRAVELPAYOUTS_API_TOKEN", raising=False)
     monkeypatch.setenv("KIWI_TEQUILA_API_KEY", "kiwi-key")
     monkeypatch.delenv("AMADEUS_CLIENT_ID", raising=False)
     monkeypatch.delenv("AMADEUS_CLIENT_SECRET", raising=False)

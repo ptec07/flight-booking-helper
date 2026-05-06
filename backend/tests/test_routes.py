@@ -3,7 +3,8 @@ from fastapi.testclient import TestClient
 from app.main import app
 
 
-def test_search_flights_returns_normalized_fixture_offers():
+def test_search_flights_returns_normalized_fixture_offers(monkeypatch):
+    monkeypatch.delenv("TRAVELPAYOUTS_API_TOKEN", raising=False)
     client = TestClient(app)
 
     response = client.get(

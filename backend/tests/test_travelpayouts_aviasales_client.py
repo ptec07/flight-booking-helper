@@ -30,7 +30,7 @@ def test_aviasales_client_calls_prices_for_dates_and_normalizes_offers():
                 {
                     "origin": "ICN",
                     "destination": "NRT",
-                    "depart_date": "2026-06-01",
+                    "departure_at": "2026-06-01T09:10:00+09:00",
                     "return_date": "2026-06-07",
                     "value": 198000,
                     "currency": "KRW",
@@ -73,12 +73,12 @@ def test_aviasales_client_calls_prices_for_dates_and_normalizes_offers():
     ]
     assert offers == [
         {
-            "id": "aviasales-ICN-NRT-2026-06-01-0",
+            "id": "aviasales-ICN-NRT-2026-06-01T09:10:00+09:00-0",
             "airline": "KE",
             "origin": "ICN",
             "destination": "NRT",
-            "departure_time": "2026-06-01T09:00:00+09:00",
-            "arrival_time": "2026-06-01T11:20:00+09:00",
+            "departure_time": "2026-06-01T09:10:00+09:00",
+            "arrival_time": "2026-06-01T11:30:00+09:00",
             "duration": "2h 20m",
             "stops": 0,
             "price": 198000,

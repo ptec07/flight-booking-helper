@@ -33,10 +33,16 @@ def format_minutes_duration(minutes: int | float | None) -> str:
     return f"{mins}m"
 
 
+def _parse_departure(value: str) -> datetime:
+    if "T" in value:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    return datetime.strptime(value, "%Y-%m-%d").replace(hour=9, minute=0)
+
+
 def _arrival_time(departure_date: str, duration_minutes: int | float | None) -> str:
-    departure = datetime.strptime(departure_date, "%Y-%m-%d").replace(hour=9, minute=0)
+    departure = _parse_departure(departure_date)
     arrival = departure + timedelta(minutes=int(duration_minutes or 0))
-    return arrival.strftime("%Y-%m-%dT%H:%M:%S+09:00")
+    return arrival.isoformat()
 
 
 def _booking_url(link: str | None, marker: str | None) -> str | None:
@@ -58,12 +64,13 @@ def normalize_aviasales_offer(raw_offer: dict, currency: str, marker: str | None
     departure_date = raw_offer.get("depart_date") or raw_offer.get("departure_at") or datetime.utcnow().strftime("%Y-%m-%d")
     duration = raw_offer.get("duration")
     airline = raw_offer.get("airline") or raw_offer.get("gate") or "Aviasales"
+    departure_time = _parse_departure(departure_date).isoformat()
     return {
         "id": f"aviasales-{origin}-{destination}-{departure_date}-{index}",
         "airline": airline,
         "origin": origin,
         "destination": destination,
-        "departure_time": f"{departure_date}T09:00:00+09:00",
+        "departure_time": departure_time,
         "arrival_time": _arrival_time(departure_date, duration),
         "duration": format_minutes_duration(duration),
         "stops": int(raw_offer.get("number_of_changes", raw_offer.get("transfers", 0)) or 0),

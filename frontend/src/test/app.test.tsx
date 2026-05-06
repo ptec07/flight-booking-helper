@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../App'
@@ -226,19 +226,26 @@ describe('Flight Booking Helper app', () => {
 
     expect(screen.getByText('저장 2')).toBeInTheDocument()
     expect(screen.getByText('Korean Air · ICN → NRT')).toBeInTheDocument()
-    expect(screen.getByText('09:10 · 11:30')).toBeInTheDocument()
-    expect(screen.getAllByText('출발날짜 2026-06-01')).toHaveLength(2)
-    expect(screen.getAllByText('도착날짜 2026-06-01')).toHaveLength(2)
+    expect(screen.getByText('출발 2026-06-01 09:10 · 도착 2026-06-01 11:30')).toBeInTheDocument()
+    expect(screen.queryByText('출발 2026-06-01 09:10')).not.toBeInTheDocument()
+    expect(screen.queryByText('도착 2026-06-01 11:30')).not.toBeInTheDocument()
+    expect(screen.queryByText('09:10 · 11:30')).not.toBeInTheDocument()
+    expect(screen.queryByText('출발날짜 2026-06-01')).not.toBeInTheDocument()
+    expect(screen.queryByText('도착날짜 2026-06-01')).not.toBeInTheDocument()
     expect(screen.getByText('₩280,000')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '저장 항공편 상세' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '저장 삭제' })).not.toBeInTheDocument()
 
-    await userEvent.click(screen.getAllByRole('button', { name: '저장 항공편 상세' })[0])
-    expect(screen.getByRole('dialog', { name: '항공권 상세' })).toBeInTheDocument()
-    expect(screen.getByText('출발날짜')).toBeInTheDocument()
-    expect(screen.getByText('도착날짜')).toBeInTheDocument()
-    expect(screen.getAllByText('2026-06-01')).toHaveLength(2)
+    await userEvent.click(screen.getAllByRole('button', { name: '상세' })[0])
+    const detailDialog = screen.getByRole('dialog', { name: '항공권 상세' })
+    expect(detailDialog).toBeInTheDocument()
+    expect(within(detailDialog).getByText('출발')).toBeInTheDocument()
+    expect(within(detailDialog).getByText('도착')).toBeInTheDocument()
+    expect(within(detailDialog).getByText('2026-06-01 09:10')).toBeInTheDocument()
+    expect(within(detailDialog).getByText('2026-06-01 11:30')).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: '닫기' }))
-    await userEvent.click(screen.getAllByRole('button', { name: '저장 삭제' })[0])
+    await userEvent.click(screen.getAllByRole('button', { name: '삭제' })[0])
     expect(screen.queryByText('Korean Air · ICN → NRT')).not.toBeInTheDocument()
     expect(JSON.parse(window.localStorage.getItem('skytrip:favorites') ?? '[]')).toHaveLength(1)
 

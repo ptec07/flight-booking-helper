@@ -575,8 +575,8 @@ button:disabled {
 
 .saved-item {
   display: grid;
-  grid-template-columns: 1fr auto auto;
-  align-items: center;
+  grid-template-columns: 1fr;
+  align-items: start;
   gap: 12px;
   border: 1px solid var(--line);
   border-radius: 20px;
@@ -585,14 +585,29 @@ button:disabled {
   padding: 14px;
 }
 
+.saved-flight-info {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.saved-price-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 .saved-item strong {
   color: var(--ink);
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 3px;
 }
 
 .saved-item p {
   color: var(--muted);
+  font-weight: 800;
+  overflow-wrap: anywhere;
 }
 
 .saved-item b {
@@ -687,7 +702,6 @@ button:disabled {
   }
 
   .saved-header,
-  .saved-item,
   .results-heading {
     grid-template-columns: 1fr;
     align-items: flex-start;

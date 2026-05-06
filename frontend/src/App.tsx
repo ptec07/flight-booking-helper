@@ -38,6 +38,12 @@ function dateParts(offer: FlightOffer) {
   return { departure: dateFormatter.format(departure), arrival: dateFormatter.format(arrival) }
 }
 
+function dateTimeParts(offer: FlightOffer) {
+  const dates = dateParts(offer)
+  const times = timeParts(offer)
+  return { departure: `${dates.departure} ${times.departure}`, arrival: `${dates.arrival} ${times.arrival}` }
+}
+
 function formatFlightTime(offer: FlightOffer) {
   const { departure, arrival } = timeParts(offer)
   return `${departure} · ${arrival} · ${offer.duration}`
@@ -485,16 +491,16 @@ function App() {
               <div className="saved-list">
                 {favorites.map((favorite) => (
                   <article className="saved-item" key={favorite.id}>
-                    <div>
+                    <div className="saved-flight-info">
                       <strong>{favorite.airline} · {favorite.origin} → {favorite.destination}</strong>
-                      <p>{timeParts(favorite).departure} · {timeParts(favorite).arrival}</p>
-                      <p>출발날짜 {dateParts(favorite).departure}</p>
-                      <p>도착날짜 {dateParts(favorite).arrival}</p>
+                      <p>출발 {dateTimeParts(favorite).departure} · 도착 {dateTimeParts(favorite).arrival}</p>
                     </div>
-                    <b>{formatCurrency(favorite.price, favorite.currency)}</b>
-                    <div className="saved-actions">
-                      <button type="button" className="ghost-button" onClick={() => setSelectedOffer(favorite)}>저장 항공편 상세</button>
-                      <button type="button" className="ghost-button danger-button" onClick={() => removeFavorite(favorite.id)}>저장 삭제</button>
+                    <div className="saved-price-actions">
+                      <b>{formatCurrency(favorite.price, favorite.currency)}</b>
+                      <div className="saved-actions">
+                        <button type="button" className="ghost-button" onClick={() => setSelectedOffer(favorite)}>상세</button>
+                        <button type="button" className="ghost-button danger-button" onClick={() => removeFavorite(favorite.id)}>삭제</button>
+                      </div>
                     </div>
                   </article>
                 ))}
@@ -524,8 +530,8 @@ function App() {
             <dl className="detail-list">
               <div><dt>항공사</dt><dd>{selectedOffer.airline}</dd></div>
               <div><dt>노선</dt><dd>{formatDetailRoute(selectedOffer)}</dd></div>
-              <div><dt>출발날짜</dt><dd>{dateParts(selectedOffer).departure}</dd></div>
-              <div><dt>도착날짜</dt><dd>{dateParts(selectedOffer).arrival}</dd></div>
+              <div><dt>출발</dt><dd>{dateTimeParts(selectedOffer).departure}</dd></div>
+              <div><dt>도착</dt><dd>{dateTimeParts(selectedOffer).arrival}</dd></div>
               <div><dt>비행시간</dt><dd>{selectedOffer.duration}</dd></div>
               <div><dt>가격</dt><dd>{formatCurrency(selectedOffer.price, selectedOffer.currency)}</dd></div>
               <div><dt>상태</dt><dd>예약 사이트에서 최종 확인</dd></div>

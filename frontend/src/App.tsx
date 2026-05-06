@@ -100,6 +100,8 @@ function readRecentRoutes(): RouteSearch[] {
 function sourceLabel(mode: string | null) {
   if (!mode) return null
   if (mode === 'aviasales') return '실시간 Aviasales 결과'
+  if (mode === 'amadeus-round-trip') return 'Amadeus 왕복 후보'
+  if (mode === 'amadeus') return 'Amadeus 후보'
   if (mode.includes('fallback') || mode === 'fixture') return '백업 데이터 결과'
   return `${mode} 결과`
 }
@@ -153,6 +155,7 @@ function App() {
   const [resultMode, setResultMode] = useState<string | null>(null)
   const [returnOffers, setReturnOffers] = useState<FlightOffer[]>([])
   const [returnResultMode, setReturnResultMode] = useState<string | null>(null)
+  const [roundTripOffers, setRoundTripOffers] = useState<FlightOffer[]>([])
   const [selectedOffer, setSelectedOffer] = useState<FlightOffer | null>(null)
   const [favorites, setFavorites] = useState<FlightOffer[]>(readFavorites)
   const [isLoading, setIsLoading] = useState(false)
@@ -160,6 +163,7 @@ function App() {
 
   const displayedOffers = useMemo(() => sortedFlightOffers(offers, sortMode), [offers, sortMode])
   const displayedReturnOffers = useMemo(() => sortedFlightOffers(returnOffers, sortMode), [returnOffers, sortMode])
+  const displayedRoundTripOffers = useMemo(() => sortedFlightOffers(roundTripOffers, sortMode), [roundTripOffers, sortMode])
   const currentSourceLabel = sourceLabel(resultMode)
   const returnSourceLabel = sourceLabel(returnResultMode)
   const currentMinimumPrice = minimumPriceLabel(offers)
@@ -276,13 +280,15 @@ function App() {
     setSelectedOffer(null)
     setReturnOffers([])
     setReturnResultMode(null)
+    setRoundTripOffers([])
     try {
-      const outboundQuery = { origin, destination, departureDate, adults: Number(adults) || 1, currency }
+      const outboundQuery = { origin, destination, departureDate, returnDate: tripType === 'round-trip' ? returnDate : undefined, adults: Number(adults) || 1, currency }
       const flightResult = await searchFlightOffers(outboundQuery)
       setOffers(flightResult.offers)
       setResultMode(flightResult.mode)
+      setRoundTripOffers(flightResult.round_trip_offers ?? [])
 
-      if (tripType === 'round-trip' && returnDate) {
+      if (tripType === 'round-trip' && returnDate && !flightResult.round_trip_offers?.length) {
         const returnResult = await searchFlightOffers({
           origin: destination,
           destination: origin,
@@ -301,6 +307,7 @@ function App() {
       setResultMode(null)
       setReturnOffers([])
       setReturnResultMode(null)
+      setRoundTripOffers([])
     } finally {
       setIsLoading(false)
     }
@@ -464,7 +471,7 @@ function App() {
                 </div>
               ) : null}
             </div>
-            {offers.length === 0 ? (
+            {offers.length === 0 && roundTripOffers.length === 0 ? (
               <div className="empty-preview">
                 <div className="preview-plane" aria-hidden="true">✈</div>
                 <strong>검색하면 이곳에 추천 항공권이 뜹니다.</strong>
@@ -473,13 +480,37 @@ function App() {
               </div>
             ) : (
               <div className="offer-list">
-                {tripType === 'round-trip' ? (
+                {displayedRoundTripOffers.length > 0 ? (
+                  <>
+                    <div className="offer-section-heading round-trip-combo-heading">
+                      <strong>추천 왕복 항공권</strong>
+                      <span>Amadeus 왕복 후보 · 최종 가격은 예약처에서 확인하세요.</span>
+                    </div>
+                    {displayedRoundTripOffers.map((offer) => (
+                      <article className="offer-card round-trip-offer-card" key={offer.id} aria-label={`${offer.airline} 왕복 ${offer.origin} ${offer.destination}`}>
+                        <div>
+                          <strong>{offer.airline}</strong>
+                          <p>{offer.round_trip?.outbound.origin} → {offer.round_trip?.outbound.destination}</p>
+                          <p>{offer.round_trip?.outbound.departure_time ? formatFlightTime({ ...offer, ...offer.round_trip.outbound }) : formatFlightTime(offer)}</p>
+                          <p>{offer.round_trip?.return.origin} → {offer.round_trip?.return.destination}</p>
+                          <p>{offer.round_trip?.return.departure_time ? formatFlightTime({ ...offer, ...offer.round_trip.return }) : ''}</p>
+                          <small>예상 왕복 총액 · 최종 가격과 조건은 예약처에서 확인하세요.</small>
+                        </div>
+                        <div className="offer-action">
+                          <b>{formatCurrency(offer.price, offer.currency)}</b>
+                          <button type="button" className="ghost-button" onClick={() => setSelectedOffer(offer)}>상세 보기</button>
+                        </div>
+                      </article>
+                    ))}
+                  </>
+                ) : null}
+                {displayedRoundTripOffers.length === 0 && tripType === 'round-trip' ? (
                   <div className="offer-section-heading">
                     <strong>가는 편</strong>
                     <span>{currentSourceLabel}{currentMinimumPrice ? ` · ${currentMinimumPrice}` : ''}</span>
                   </div>
                 ) : null}
-                {displayedOffers.map((offer) => (
+                {displayedRoundTripOffers.length === 0 ? displayedOffers.map((offer) => (
                   <article className="offer-card" key={offer.id} aria-label={`${offer.airline} ${offer.origin} ${offer.destination}`}>
                     <div>
                       <strong>{offer.airline}</strong>
@@ -499,8 +530,8 @@ function App() {
                       <button type="button" className="ghost-button" onClick={() => setSelectedOffer(offer)}>상세 보기</button>
                     </div>
                   </article>
-                ))}
-                {tripType === 'round-trip' ? (
+                )) : null}
+                {displayedRoundTripOffers.length === 0 && tripType === 'round-trip' ? (
                   <>
                     <div className="offer-section-heading">
                       <strong>오는 편</strong>

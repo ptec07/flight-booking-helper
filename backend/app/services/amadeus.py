@@ -45,27 +45,48 @@ def normalize_iso_duration(duration: str) -> str:
     return f"{minutes}m"
 
 
-def normalize_amadeus_offer(raw_offer: dict) -> dict:
-    itinerary = raw_offer.get("itineraries", [{}])[0]
+def normalize_amadeus_itinerary(itinerary: dict, fallback_airline: str) -> dict:
     segments = itinerary.get("segments", [])
     first_segment = segments[0] if segments else {}
     last_segment = segments[-1] if segments else first_segment
-    airline = (raw_offer.get("validatingAirlineCodes") or [first_segment.get("carrierCode", "Unknown")])[0]
-    price = raw_offer.get("price", {})
-
+    airline = first_segment.get("carrierCode") or fallback_airline or "Unknown"
     return {
-        "id": f"amadeus-{raw_offer.get('id')}",
-        "airline": airline,
         "origin": first_segment.get("departure", {}).get("iataCode"),
         "destination": last_segment.get("arrival", {}).get("iataCode"),
         "departure_time": first_segment.get("departure", {}).get("at"),
         "arrival_time": last_segment.get("arrival", {}).get("at"),
         "duration": normalize_iso_duration(itinerary.get("duration", "")),
         "stops": max(len(segments) - 1, 0),
+        "airline": airline,
+    }
+
+
+def normalize_amadeus_offer(raw_offer: dict) -> dict:
+    itineraries = raw_offer.get("itineraries", [{}])
+    first_itinerary = itineraries[0] if itineraries else {}
+    airline = (raw_offer.get("validatingAirlineCodes") or ["Unknown"])[0]
+    outbound = normalize_amadeus_itinerary(first_itinerary, airline)
+    price = raw_offer.get("price", {})
+
+    normalized = {
+        "id": f"amadeus-{raw_offer.get('id')}",
+        "airline": airline,
+        "origin": outbound.get("origin"),
+        "destination": outbound.get("destination"),
+        "departure_time": outbound.get("departure_time"),
+        "arrival_time": outbound.get("arrival_time"),
+        "duration": outbound.get("duration"),
+        "stops": outbound.get("stops"),
         "price": float(price.get("grandTotal", 0)),
         "currency": price.get("currency"),
         "booking_hint": "Amadeus Flight Offers Search sandbox 결과입니다. 예약/발권은 별도 링크/상용 계약이 필요합니다.",
     }
+    if len(itineraries) >= 2:
+        normalized["round_trip"] = {
+            "outbound": outbound,
+            "return": normalize_amadeus_itinerary(itineraries[1], airline),
+        }
+    return normalized
 
 
 class AmadeusClient:

@@ -13,9 +13,10 @@
   - `GET /api/flights/search`
   - `GET /api/trip/context`
   - public-apis 후보 카탈로그 서비스
+  - Amadeus credential이 있으면 왕복 검색에서 공식 Flight Offers Search 왕복 offer 우선 시도
   - Travelpayouts / Aviasales token 기반 항공권 가격 검색 adapter
   - `TRAVELPAYOUTS_API_TOKEN`이 없으면 백업 데이터, Aviasales 호출 실패 시 백업 데이터 반환
-  - Kiwi Tequila / Amadeus adapter는 legacy fallback으로 유지
+  - Kiwi Tequila adapter는 legacy fallback으로 유지
   - `live=true`일 때 Open-Meteo 현재 날씨/3일 예보, Frankfurter 또는 ExchangeRate-API Open 환율 조회
   - `FRONTEND_ORIGIN` 기반 CORS 설정
 - Vite + React frontend
@@ -39,13 +40,14 @@
 
 ## 실제 API 연동 전략
 
-MVP는 Travelpayouts API token이 없으면 안전하게 백업 데이터로 동작하고, token이 있으면 backend에서만 Aviasales Data API를 호출합니다. Kiwi Tequila는 magic-link/가입 문제가 있을 때를 대비한 legacy fallback adapter로 유지합니다. no-auth 보조 API도 일부 실제 wrapper를 붙였습니다.
+MVP는 Travelpayouts API token이 없으면 안전하게 백업 데이터로 동작하고, token이 있으면 backend에서만 Aviasales Data API를 호출합니다. 왕복 검색은 `AMADEUS_CLIENT_ID`/`AMADEUS_CLIENT_SECRET`이 있을 때 Amadeus Flight Offers Search를 먼저 시도해 `round_trip_offers`를 반환하고, 실패/미설정이면 기존 Aviasales split-search 방식으로 fallback합니다. Kiwi Tequila는 magic-link/가입 문제가 있을 때를 대비한 legacy fallback adapter로 유지합니다. no-auth 보조 API도 일부 실제 wrapper를 붙였습니다.
 
-- Travelpayouts / Aviasales: `TRAVELPAYOUTS_API_TOKEN`이 있으면 `/api/flights/search`에서 `aviasales/v3/prices_for_dates` 호출
+- Amadeus: 왕복 검색에서 `AMADEUS_CLIENT_ID`, `AMADEUS_CLIENT_SECRET`이 있으면 `/v2/shopping/flight-offers`를 `returnDate` 포함으로 호출하고, 실제 왕복 itinerary를 `round_trip_offers`로 반환
+- Travelpayouts / Aviasales: `TRAVELPAYOUTS_API_TOKEN`이 있으면 `/api/flights/search`에서 `aviasales/v3/prices_for_dates` 호출. Amadeus 왕복 후보가 없으면 frontend가 가는 편/오는 편을 나눠 조회합니다.
 - Travelpayouts marker: `TRAVELPAYOUTS_MARKER`가 있으면 Aviasales booking link에 marker를 붙임
 - Aviasales 실패/미설정: 백업 항공권 후보 반환
 - Kiwi Tequila: `KIWI_TEQUILA_API_KEY`가 있고 Travelpayouts token이 없을 때만 legacy fallback으로 시도
-- Amadeus: `AMADEUS_CLIENT_ID`, `AMADEUS_CLIENT_SECRET`이 있고 Travelpayouts/Kiwi key가 없을 때만 legacy fallback으로 시도
+- Amadeus 실패/미설정: 기존 Aviasales/Kiwi/백업 데이터 흐름으로 fallback
 - Open-Meteo: `/api/trip/context?live=true`에서 도착 공항 좌표 기준 현재 날씨와 3일 예보 조회
 - Frankfurter: `/api/trip/context?live=true`에서 지정 금액의 KRW 환산 조회
 - ExchangeRate-API Open: Frankfurter가 차단/실패하거나 KRW rate를 못 주면 no-auth backup으로 환율 조회

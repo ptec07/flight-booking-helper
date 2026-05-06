@@ -229,7 +229,7 @@ describe('Flight Booking Helper app', () => {
     await userEvent.type(screen.getByLabelText('귀국일'), '2026-06-07')
     await userEvent.click(screen.getByRole('button', { name: '항공권 검색' }))
 
-    expect(fetchMock).toHaveBeenCalledWith('/api/flights/search?origin=ICN&destination=NRT&departure_date=2026-06-01&adults=1&currency=KRW')
+    expect(fetchMock).toHaveBeenCalledWith('/api/flights/search?origin=ICN&destination=NRT&departure_date=2026-06-01&return_date=2026-06-07&adults=1&currency=KRW')
     expect(fetchMock).toHaveBeenCalledWith('/api/flights/search?origin=NRT&destination=ICN&departure_date=2026-06-07&adults=1&currency=KRW')
     expect(await screen.findByText('가는 편')).toBeInTheDocument()
     expect(screen.getByText('오는 편')).toBeInTheDocument()
@@ -291,4 +291,49 @@ describe('Flight Booking Helper app', () => {
     expect(screen.queryByText('저장 2')).not.toBeInTheDocument()
     expect(JSON.parse(window.localStorage.getItem('skytrip:favorites') ?? '[]')).toHaveLength(0)
   })
+
+  it('shows Amadeus recommended round-trip offers as one combined result', async () => {
+    const amadeusRoundTripResponse = {
+      mode: 'amadeus-round-trip',
+      offers: [],
+      round_trip_offers: [
+        {
+          id: 'amadeus-rt-1',
+          airline: 'KE',
+          origin: 'ICN',
+          destination: 'KIX',
+          departure_time: '2026-06-01T09:00:00+09:00',
+          arrival_time: '2026-06-01T10:50:00+09:00',
+          duration: '1h 50m',
+          stops: 0,
+          price: 342000,
+          currency: 'KRW',
+          booking_hint: 'Amadeus Flight Offers Search sandbox 결과입니다.',
+          round_trip: {
+            outbound: { origin: 'ICN', destination: 'KIX', departure_time: '2026-06-01T09:00:00+09:00', arrival_time: '2026-06-01T10:50:00+09:00', duration: '1h 50m', stops: 0, airline: 'KE' },
+            return: { origin: 'KIX', destination: 'ICN', departure_time: '2026-06-07T14:00:00+09:00', arrival_time: '2026-06-07T15:55:00+09:00', duration: '1h 55m', stops: 0, airline: 'KE' },
+          },
+        },
+      ],
+    }
+    const fetchMock = vi.fn(() => Promise.resolve({ ok: true, status: 200, json: async () => amadeusRoundTripResponse }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<App />)
+
+    await userEvent.click(screen.getByRole('button', { name: '왕복' }))
+    await userEvent.type(screen.getByLabelText('귀국일'), '2026-06-07')
+    await userEvent.click(screen.getByRole('button', { name: '서울 → 오사카' }))
+    await userEvent.click(screen.getByRole('button', { name: '항공권 검색' }))
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetchMock).toHaveBeenCalledWith('/api/flights/search?origin=ICN&destination=KIX&departure_date=2026-06-01&return_date=2026-06-07&adults=1&currency=KRW')
+    expect(await screen.findByText('추천 왕복 항공권')).toBeInTheDocument()
+    expect(screen.getByText('Amadeus 왕복 후보')).toBeInTheDocument()
+    expect(screen.getByText('ICN → KIX')).toBeInTheDocument()
+    expect(screen.getByText('KIX → ICN')).toBeInTheDocument()
+    expect(screen.getByText('₩342,000')).toBeInTheDocument()
+    expect(screen.queryByText('오는 편')).not.toBeInTheDocument()
+  })
+
 })

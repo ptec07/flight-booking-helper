@@ -54,6 +54,35 @@ def test_trip_context_combines_weather_currency_and_aviation_status():
     assert body["aviation_weather"]["station"] == "RJAA"
 
 
+def test_trip_context_knows_nha_trang_cam_ranh_airport():
+    client = TestClient(app)
+
+    response = client.get("/api/trip/context", params={"destination": "CXR", "amount": 200, "currency": "USD"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["airport"]["iata"] == "CXR"
+    assert body["airport"]["icao"] == "VVCR"
+    assert body["airport"]["city"] == "Nha Trang"
+    assert body["airport"]["lat"] == 11.9982
+    assert body["aviation_weather"]["station"] == "VVCR"
+
+
+def test_trip_context_has_airport_metadata_for_popular_catalog_codes():
+    from app.services.trip_context import AIRPORT_FIXTURES
+
+    popular_codes = {
+        "ICN", "GMP", "PUS", "CJU", "NRT", "HND", "KIX", "FUK", "CTS",
+        "BKK", "DMK", "SIN", "CXR", "DAD", "SGN", "HAN", "PQC", "HKT", "CNX",
+        "TPE", "HKG", "MNL", "CRK", "MPH", "DPS", "KUL", "GUM", "SPN", "CEB",
+        "JFK", "LAX", "SFO", "LHR", "CDG",
+    }
+
+    missing_codes = sorted(popular_codes - set(AIRPORT_FIXTURES))
+
+    assert missing_codes == []
+
+
 def test_trip_context_can_use_live_no_auth_public_api_wrappers(monkeypatch):
     def fake_weather(lat, lon):
         return {

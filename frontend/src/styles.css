@@ -324,10 +324,48 @@ h2 {
   position: relative;
 }
 
+.airport-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.airport-input-wrap input {
+  padding-right: 44px;
+}
+
+.airport-clear-button {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  width: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  height: 30px;
+  border: 1px solid var(--sky-200);
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: none;
+  color: var(--sky-600);
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0;
+  transform: translateY(-50%);
+}
+
+.airport-clear-button:hover,
+.airport-clear-button:focus {
+  background: var(--sky-50);
+}
+
 .selected-code {
   color: var(--sky-600);
   font-size: 0.76rem;
   font-weight: 900;
+}
+
+.empty-code {
+  color: #94a3b8;
 }
 
 .airport-options {

@@ -215,6 +215,18 @@ function App() {
     setActiveAirportField(null)
   }
 
+  function clearAirportField(field: AirportField) {
+    if (field === 'origin') {
+      setOrigin('')
+      setOriginQuery('')
+    } else {
+      setDestination('')
+      setDestinationQuery('')
+    }
+    setActiveAirportField(field)
+    setError('출발/도착 도시를 검색해 공항을 선택해주세요.')
+  }
+
   function updateAirportQuery(field: AirportField, value: string) {
     const directCode = formatAirportCode(value)
     const directAirport = directCode.length === 3 ? findAirportByCode(directCode) : undefined
@@ -276,17 +288,30 @@ function App() {
     return (
       <label className="airport-field">
         {label}
-        <input
-          value={query}
-          onChange={(event) => updateAirportQuery(field, event.target.value)}
-          onFocus={() => setActiveAirportField(field)}
-          aria-label={`${label} 도시 또는 공항`}
-          aria-controls={`${field}-airport-options`}
-          aria-expanded={activeAirportField === field}
-          autoComplete="off"
-          placeholder="도시명·공항명·코드"
-        />
-        <span className="selected-code">선택됨 · {value}</span>
+        <div className="airport-input-wrap">
+          <input
+            value={query}
+            onChange={(event) => updateAirportQuery(field, event.target.value)}
+            onFocus={() => setActiveAirportField(field)}
+            aria-label={`${label} 도시 또는 공항`}
+            aria-controls={`${field}-airport-options`}
+            aria-expanded={activeAirportField === field}
+            autoComplete="off"
+            placeholder="도시명·공항명·코드"
+          />
+          {query ? (
+            <button
+              type="button"
+              className="airport-clear-button"
+              aria-label={`${label} 입력 지우기`}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => clearAirportField(field)}
+            >
+              ×
+            </button>
+          ) : null}
+        </div>
+        {value ? <span className="selected-code">선택됨 · {value}</span> : <span className="selected-code empty-code">공항을 선택해주세요</span>}
         {activeAirportField === field && suggestions.length > 0 ? (
           <div className="airport-options" role="listbox" id={`${field}-airport-options`} aria-label={`${label} 공항 추천`}>
             {suggestions.map((airport) => (

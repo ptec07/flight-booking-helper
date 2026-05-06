@@ -112,6 +112,23 @@ describe('Flight Booking Helper app', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
+  it('clears departure and destination airport fields with inline x buttons', async () => {
+    const fetchMock = stubSearchFetch()
+    render(<App />)
+
+    await userEvent.click(screen.getByRole('button', { name: '출발 입력 지우기' }))
+    expect(screen.getByLabelText('출발 도시 또는 공항')).toHaveValue('')
+    expect(screen.queryByText('선택됨 · ')).not.toBeInTheDocument()
+    expect(screen.getByText('출발/도착 도시를 검색해 공항을 선택해주세요.')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: '도착 입력 지우기' }))
+    expect(screen.getByLabelText('도착 도시 또는 공항')).toHaveValue('')
+    await userEvent.click(screen.getByRole('button', { name: '항공권 검색' }))
+
+    expect(screen.getByText('출발/도착 도시를 검색해 공항을 선택해주세요.')).toBeInTheDocument()
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
   it('loads flight offers and live trip context from FastAPI with expanded search params', async () => {
     const fetchMock = stubSearchFetch()
 

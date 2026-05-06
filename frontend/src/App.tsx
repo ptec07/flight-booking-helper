@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { getTripContext, searchFlightOffers, type FlightOffer, type TripContext } from './api'
+import { searchFlightOffers, type FlightOffer } from './api'
 import { airportDisplayName, findAirportByCode, searchAirports, type Airport } from './airports'
 
 const favoriteStorageKey = 'skytrip:favorites'
@@ -29,6 +29,13 @@ function timeParts(offer: FlightOffer) {
   const arrival = new Date(offer.arrival_time)
   const timeFormatter = new Intl.DateTimeFormat('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
   return { departure: timeFormatter.format(departure), arrival: timeFormatter.format(arrival) }
+}
+
+function dateParts(offer: FlightOffer) {
+  const departure = new Date(offer.departure_time)
+  const arrival = new Date(offer.arrival_time)
+  const dateFormatter = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' })
+  return { departure: dateFormatter.format(departure), arrival: dateFormatter.format(arrival) }
 }
 
 function formatFlightTime(offer: FlightOffer) {
@@ -82,11 +89,6 @@ function readRecentRoutes(): RouteSearch[] {
   } catch {
     return []
   }
-}
-
-function exchangeTimestampLabel(value?: string) {
-  if (!value) return '환율 기준 · 실시간 확인'
-  return `환율 기준 · ${value.slice(0, 10)}`
 }
 
 function sourceLabel(mode: string | null) {
@@ -145,8 +147,6 @@ function App() {
   const [resultMode, setResultMode] = useState<string | null>(null)
   const [selectedOffer, setSelectedOffer] = useState<FlightOffer | null>(null)
   const [favorites, setFavorites] = useState<FlightOffer[]>(readFavorites)
-  const [tripContext, setTripContext] = useState<TripContext | null>(null)
-  const [lastSearchSummary, setLastSearchSummary] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -256,7 +256,6 @@ function App() {
 
     setIsLoading(true)
     setError(null)
-    setTripContext(null)
     setSelectedOffer(null)
     try {
       const flightResult = await searchFlightOffers({
@@ -269,10 +268,7 @@ function App() {
       })
       setOffers(flightResult.offers)
       setResultMode(flightResult.mode)
-      setLastSearchSummary(`${airportLabel(origin)} → ${airportLabel(destination)} · ${tripType === 'round-trip' ? '왕복' : '편도'} · 성인 ${Number(adults) || 1}명`)
       updateRecentRoutes({ origin, destination })
-      const contextResult = await getTripContext({ destination, amount: 200, currency: 'USD', live: true })
-      setTripContext(contextResult)
     } catch {
       setError('정보를 불러오지 못했어요. 백엔드를 확인해주세요.')
       setOffers([])
@@ -340,7 +336,7 @@ function App() {
         <div className="hero-text">
           <p className="eyebrow">Flight helper</p>
           <h1>SkyTrip</h1>
-          <p className="hero-copy">항공권·환율을 한 번에 확인하세요.</p>
+          <p className="hero-copy">원하는 항공권을 찾으세요.</p>
         </div>
       </section>
 
@@ -406,12 +402,6 @@ function App() {
                 </select>
               </label>
             </div>
-            {lastSearchSummary ? (
-              <div className="search-summary" aria-label="검색 조건">
-                <strong>검색 조건</strong>
-                <span>{lastSearchSummary}</span>
-              </div>
-            ) : null}
             <button type="button" onClick={handleSearch} disabled={isLoading}>
               {isLoading ? '검색 중' : '항공권 검색'}
             </button>
@@ -480,22 +470,6 @@ function App() {
             )}
           </section>
 
-          {tripContext ? (
-            <section className="context-card" aria-label="여행 체크">
-              <div className="section-heading">
-                <p className="eyebrow">Live</p>
-                <h2>여행 체크</h2>
-              </div>
-              <div className="context-grid">
-                <p>
-                  <strong>환율</strong>
-                  <span>200 USD 환산 · 약 {tripContext.exchange.converted_amount?.toLocaleString('ko-KR')} KRW</span>
-                  <small>{exchangeTimestampLabel(tripContext.exchange.updated_at)}</small>
-                </p>
-              </div>
-            </section>
-          ) : null}
-
           {favorites.length > 0 ? (
             <section className="saved-card" aria-label="저장한 항공편">
               <div className="saved-header">
@@ -514,6 +488,8 @@ function App() {
                     <div>
                       <strong>{favorite.airline} · {favorite.origin} → {favorite.destination}</strong>
                       <p>{timeParts(favorite).departure} · {timeParts(favorite).arrival}</p>
+                      <p>출발날짜 {dateParts(favorite).departure}</p>
+                      <p>도착날짜 {dateParts(favorite).arrival}</p>
                     </div>
                     <b>{formatCurrency(favorite.price, favorite.currency)}</b>
                     <div className="saved-actions">
@@ -548,6 +524,8 @@ function App() {
             <dl className="detail-list">
               <div><dt>항공사</dt><dd>{selectedOffer.airline}</dd></div>
               <div><dt>노선</dt><dd>{formatDetailRoute(selectedOffer)}</dd></div>
+              <div><dt>출발날짜</dt><dd>{dateParts(selectedOffer).departure}</dd></div>
+              <div><dt>도착날짜</dt><dd>{dateParts(selectedOffer).arrival}</dd></div>
               <div><dt>비행시간</dt><dd>{selectedOffer.duration}</dd></div>
               <div><dt>가격</dt><dd>{formatCurrency(selectedOffer.price, selectedOffer.currency)}</dd></div>
               <div><dt>상태</dt><dd>예약 사이트에서 최종 확인</dd></div>

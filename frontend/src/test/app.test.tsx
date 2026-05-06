@@ -37,16 +37,8 @@ const flightResponse = {
   ],
 }
 
-const tripContextResponse = {
-  weather: { mode: 'live', summary: '대체로 맑음', temperature_c: 18.4, risk: '낮음' },
-  exchange: { mode: 'live', converted_amount: 270000, from: 'USD', to: 'KRW' },
-}
-
 function stubSearchFetch() {
-  const fetchMock = vi
-    .fn()
-    .mockResolvedValueOnce({ ok: true, status: 200, json: async () => flightResponse })
-    .mockResolvedValueOnce({ ok: true, status: 200, json: async () => tripContextResponse })
+  const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => flightResponse })
   vi.stubGlobal('fetch', fetchMock)
   return fetchMock
 }
@@ -59,8 +51,9 @@ describe('Flight Booking Helper app', () => {
     render(<App />)
 
     expect(screen.getByRole('heading', { name: 'SkyTrip' })).toBeInTheDocument()
-    expect(screen.getByText('항공권·환율을 한 번에 확인하세요.')).toBeInTheDocument()
+    expect(screen.getByText('원하는 항공권을 찾으세요.')).toBeInTheDocument()
     expect(screen.queryByText('항공권·날씨·환율을 한 번에 확인하세요.')).not.toBeInTheDocument()
+    expect(screen.queryByText('항공권·환율을 한 번에 확인하세요.')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: '항공권 검색' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '편도' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '왕복' })).toBeInTheDocument()
@@ -136,7 +129,7 @@ describe('Flight Booking Helper app', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('loads flight offers and live trip context from FastAPI with expanded search params', async () => {
+  it('loads flight offers from FastAPI without the removed live trip context card', async () => {
     const fetchMock = stubSearchFetch()
 
     render(<App />)
@@ -153,17 +146,17 @@ describe('Flight Booking Helper app', () => {
     expect(screen.getByText('실시간 Aviasales 결과')).toBeInTheDocument()
     expect(screen.getByText('최저가 ₩220,000')).toBeInTheDocument()
     expect(screen.getAllByRole('link', { name: 'Aviasales에서 보기' })[0]).toHaveAttribute('href', 'https://www.aviasales.com/search/ICN0106NRT1')
-    expect(await screen.findByText(/여행 체크/)).toBeInTheDocument()
-    expect(screen.queryByText('날씨')).not.toBeInTheDocument()
-    expect(screen.queryByText('3일 날씨')).not.toBeInTheDocument()
-    expect(screen.queryByText(/도착지 기준/)).not.toBeInTheDocument()
-    expect(screen.queryByText(/대체로 맑음/)).not.toBeInTheDocument()
-    expect(screen.getByText(/약 270,000 KRW/)).toBeInTheDocument()
+    expect(screen.queryByLabelText('여행 체크')).not.toBeInTheDocument()
+    expect(screen.queryByText('Live')).not.toBeInTheDocument()
+    expect(screen.queryByText(/여행 체크/)).not.toBeInTheDocument()
+    expect(screen.queryByText('환율')).not.toBeInTheDocument()
+    expect(screen.queryByText(/약 270,000 KRW/)).not.toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: '상세 보기' })[0]).toBeInTheDocument()
     expect(screen.queryByText(/fixture/)).not.toBeInTheDocument()
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/flights/search?origin=ICN&destination=NRT&departure_date=2026-06-01&adults=2&currency=USD',
     )
+    expect(fetchMock).not.toHaveBeenCalledWith(expect.stringContaining('/api/trip/context'))
   })
 
   it('sorts search results by price, departure time, and stops', async () => {
@@ -234,10 +227,15 @@ describe('Flight Booking Helper app', () => {
     expect(screen.getByText('저장 2')).toBeInTheDocument()
     expect(screen.getByText('Korean Air · ICN → NRT')).toBeInTheDocument()
     expect(screen.getByText('09:10 · 11:30')).toBeInTheDocument()
+    expect(screen.getAllByText('출발날짜 2026-06-01')).toHaveLength(2)
+    expect(screen.getAllByText('도착날짜 2026-06-01')).toHaveLength(2)
     expect(screen.getByText('₩280,000')).toBeInTheDocument()
 
     await userEvent.click(screen.getAllByRole('button', { name: '저장 항공편 상세' })[0])
     expect(screen.getByRole('dialog', { name: '항공권 상세' })).toBeInTheDocument()
+    expect(screen.getByText('출발날짜')).toBeInTheDocument()
+    expect(screen.getByText('도착날짜')).toBeInTheDocument()
+    expect(screen.getAllByText('2026-06-01')).toHaveLength(2)
 
     await userEvent.click(screen.getByRole('button', { name: '닫기' }))
     await userEvent.click(screen.getAllByRole('button', { name: '저장 삭제' })[0])

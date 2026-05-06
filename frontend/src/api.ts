@@ -19,21 +19,6 @@ export type FlightSearchResponse = {
   offers: FlightOffer[]
 }
 
-export type ForecastDay = {
-  date: string
-  min_c?: number
-  max_c?: number
-  precipitation_probability?: number
-  summary?: string
-}
-
-export type TripContext = {
-  weather: { mode: string; summary?: string; temperature_c?: number; wind_speed_kmh?: number; risk?: string }
-  exchange: { mode: string; converted_amount?: number; from?: string; to?: string; updated_at?: string }
-  forecast?: ForecastDay[]
-  travel_tip?: string
-}
-
 function apiUrl(path: string) {
   const baseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? ''
   return `${baseUrl}${path}`
@@ -65,21 +50,4 @@ export async function searchFlightOffers(query: {
 
   const response = await fetch(apiUrl(`/api/flights/search?${params.toString()}`))
   return parseJsonResponse<FlightSearchResponse>(response)
-}
-
-export async function getTripContext(query: {
-  destination: string
-  amount: number
-  currency: string
-  live?: boolean
-}): Promise<TripContext> {
-  const params = new URLSearchParams({
-    destination: query.destination.toUpperCase(),
-    amount: String(query.amount),
-    currency: query.currency.toUpperCase(),
-  })
-  if (query.live) params.set('live', 'true')
-
-  const response = await fetch(apiUrl(`/api/trip/context?${params.toString()}`))
-  return parseJsonResponse<TripContext>(response)
 }

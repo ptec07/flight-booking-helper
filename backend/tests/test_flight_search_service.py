@@ -50,7 +50,9 @@ def test_search_flights_uses_amadeus_when_credentials_are_present(monkeypatch):
         }
     )
 
-    assert result == {"mode": "amadeus", "offers": [{"id": "amadeus-1", "airline": "KE"}]}
+    assert result["mode"] == "amadeus"
+    assert len(result["offers"]) >= 3
+    assert result["offers"][0] == {"id": "amadeus-1", "airline": "KE"}
 
 
 def test_search_flights_falls_back_to_fixture_when_amadeus_fails(monkeypatch):

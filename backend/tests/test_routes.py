@@ -40,6 +40,50 @@ def test_search_flights_returns_normalized_fixture_offers(monkeypatch):
     }
 
 
+def test_search_flights_pads_sparse_live_provider_results(monkeypatch):
+    from app.services.flight_search import search_flights
+
+    class SparseAviasalesClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def search_flight_offers(self, query):
+            return [
+                {
+                    "id": "live-only-1",
+                    "airline": "Live Air",
+                    "origin": query.origin,
+                    "destination": query.destination,
+                    "departure_time": f"{query.departure_date}T08:00:00+09:00",
+                    "arrival_time": f"{query.departure_date}T10:00:00+09:00",
+                    "duration": "2h 00m",
+                    "stops": 0,
+                    "price": 199000,
+                    "currency": query.currency,
+                    "booking_hint": "live",
+                    "booking_url": "https://example.com/live",
+                }
+            ]
+
+    monkeypatch.setenv("TRAVELPAYOUTS_API_TOKEN", "test-token")
+    monkeypatch.setattr("app.services.flight_search.AviasalesClient", SparseAviasalesClient)
+
+    result = search_flights(
+        {
+            "origin": "ICN",
+            "destination": "KIX",
+            "departure_date": "2026-05-11",
+            "adults": 2,
+            "currency": "KRW",
+        }
+    )
+
+    assert result["mode"] == "aviasales"
+    assert len(result["offers"]) >= 3
+    assert result["offers"][0]["id"] == "live-only-1"
+    assert all(offer["origin"] == "ICN" and offer["destination"] == "KIX" for offer in result["offers"])
+
+
 def test_trip_context_combines_weather_currency_and_aviation_status():
     client = TestClient(app)
 

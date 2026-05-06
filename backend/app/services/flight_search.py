@@ -102,6 +102,22 @@ def search_fixture_flights(query: dict) -> list[dict]:
     ]
 
 
+def pad_sparse_offers(offers: list[dict], query: dict, minimum: int = 3) -> list[dict]:
+    if len(offers) >= minimum:
+        return offers
+
+    seen_ids = {offer.get("id") for offer in offers}
+    padded_offers = [*offers]
+    for backup_offer in search_fixture_flights(query):
+        if backup_offer.get("id") in seen_ids:
+            continue
+        padded_offers.append({**backup_offer, "booking_hint": "검색 결과가 적어 함께 보여주는 백업 후보입니다."})
+        seen_ids.add(backup_offer.get("id"))
+        if len(padded_offers) >= minimum:
+            break
+    return padded_offers
+
+
 def search_flights(query: dict) -> dict:
     travelpayouts_token = os.getenv("TRAVELPAYOUTS_API_TOKEN", "").strip()
     if travelpayouts_token:
@@ -119,7 +135,7 @@ def search_flights(query: dict) -> dict:
                 marker=os.getenv("TRAVELPAYOUTS_MARKER", "").strip() or None,
                 base_url=os.getenv("TRAVELPAYOUTS_BASE_URL", "https://api.travelpayouts.com"),
             ).search_flight_offers(aviasales_query)
-            return {"mode": "aviasales", "offers": offers}
+            return {"mode": "aviasales", "offers": pad_sparse_offers(offers, query)}
         except Exception:
             return {
                 "mode": "aviasales-fallback",
@@ -142,7 +158,7 @@ def search_flights(query: dict) -> dict:
                 api_key=kiwi_key,
                 base_url=os.getenv("KIWI_TEQUILA_BASE_URL", "https://api.tequila.kiwi.com"),
             ).search_flight_offers(kiwi_query)
-            return {"mode": "kiwi-tequila", "offers": offers}
+            return {"mode": "kiwi-tequila", "offers": pad_sparse_offers(offers, query)}
         except Exception:
             return {
                 "mode": "kiwi-fallback",
@@ -168,7 +184,7 @@ def search_flights(query: dict) -> dict:
             AmadeusCredentials(client_id=client_id, client_secret=client_secret),
             base_url=os.getenv("AMADEUS_BASE_URL", "https://test.api.amadeus.com"),
         ).search_flight_offers(amadeus_query)
-        return {"mode": "amadeus", "offers": offers}
+        return {"mode": "amadeus", "offers": pad_sparse_offers(offers, query)}
     except Exception:
         return {
             "mode": "fixture-fallback",

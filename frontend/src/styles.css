@@ -308,6 +308,88 @@ h2 {
   margin: 20px 0 18px;
 }
 
+.compact-grid {
+  margin-top: 14px;
+}
+
+.route-picker {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  margin-top: 18px;
+}
+
+.airport-field {
+  position: relative;
+}
+
+.selected-code {
+  color: var(--sky-600);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.airport-options {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 12;
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--sky-200);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.14);
+  max-height: 286px;
+  overflow: auto;
+  padding: 8px;
+}
+
+.airport-option {
+  display: grid;
+  gap: 3px;
+  min-height: auto;
+  border-radius: 14px;
+  background: #f8fdff;
+  box-shadow: none;
+  color: var(--ink);
+  justify-items: start;
+  padding: 10px;
+  text-align: left;
+}
+
+.airport-option:hover,
+.airport-option:focus {
+  background: var(--sky-50);
+}
+
+.airport-option span,
+.airport-option small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.swap-button {
+  align-self: center;
+  width: 48px;
+  min-width: 48px;
+  border-radius: 999px;
+  padding: 0;
+}
+
+.recent-routes {
+  align-items: center;
+}
+
+.recent-routes > strong {
+  color: var(--muted);
+  font-size: 0.82rem;
+  margin-right: 2px;
+}
+
 label {
   display: grid;
   gap: 7px;
@@ -795,9 +877,15 @@ button:disabled {
   }
 
   .input-grid,
+  .route-picker,
   .context-grid,
   .forecast-list {
     grid-template-columns: 1fr;
+  }
+
+  .swap-button {
+    justify-self: center;
+    transform: rotate(90deg);
   }
 
   .trip-toggle {

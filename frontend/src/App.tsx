@@ -1,10 +1,14 @@
 import { useMemo, useState } from 'react'
 import { getTripContext, searchFlightOffers, type FlightOffer, type TripContext } from './api'
+import { airportDisplayName, findAirportByCode, searchAirports, type Airport } from './airports'
 
 const apiBadges = ['Aviasales', 'Open-Meteo', '환율']
 const favoriteStorageKey = 'skytrip:favorites'
+const recentRoutesStorageKey = 'skytrip:recent-routes'
 type TripType = 'one-way' | 'round-trip'
 type SortMode = 'recommended' | 'price' | 'departure' | 'stops'
+type RouteSearch = { origin: string; destination: string }
+type AirportField = 'origin' | 'destination'
 
 const popularRoutes = [
   { label: '서울 → 도쿄', origin: 'ICN', destination: 'NRT' },
@@ -58,6 +62,29 @@ function readFavorites(): FlightOffer[] {
   }
 }
 
+function isKnownAirportCode(value: unknown): value is string {
+  return typeof value === 'string' && Boolean(findAirportByCode(value))
+}
+
+function readRecentRoutes(): RouteSearch[] {
+  try {
+    const routes = JSON.parse(window.localStorage.getItem(recentRoutesStorageKey) ?? '[]') as unknown
+    if (!Array.isArray(routes)) return []
+    const sanitizedRoutes = routes.filter(
+      (route): route is RouteSearch =>
+        typeof route === 'object' &&
+        route !== null &&
+        isKnownAirportCode((route as RouteSearch).origin) &&
+        isKnownAirportCode((route as RouteSearch).destination),
+    )
+    return sanitizedRoutes
+      .filter((route, index, allRoutes) => allRoutes.findIndex((other) => other.origin === route.origin && other.destination === route.destination) === index)
+      .slice(0, 4)
+  } catch {
+    return []
+  }
+}
+
 function exchangeTimestampLabel(value?: string) {
   if (!value) return '환율 기준 · 실시간 확인'
   return `환율 기준 · ${value.slice(0, 10)}`
@@ -89,9 +116,26 @@ function minimumPriceLabel(offers: FlightOffer[]) {
   return `최저가 ${formatCurrency(cheapest.price, cheapest.currency)}`
 }
 
+function airportLabel(code: string) {
+  const airport = findAirportByCode(code)
+  return airport ? airportDisplayName(airport) : code
+}
+
+function airportOptionLabel(airport: Airport) {
+  return `${airport.cityKo} · ${airport.code} · ${airport.airportKo} · ${airport.countryKo}`
+}
+
+function displayRoute(route: RouteSearch) {
+  return `${airportLabel(route.origin)} → ${airportLabel(route.destination)}`
+}
+
 function App() {
   const [origin, setOrigin] = useState('ICN')
   const [destination, setDestination] = useState('NRT')
+  const [originQuery, setOriginQuery] = useState(airportLabel('ICN'))
+  const [destinationQuery, setDestinationQuery] = useState(airportLabel('NRT'))
+  const [activeAirportField, setActiveAirportField] = useState<AirportField | null>(null)
+  const [recentRoutes, setRecentRoutes] = useState<RouteSearch[]>(readRecentRoutes)
   const [departureDate, setDepartureDate] = useState('2026-06-01')
   const [returnDate, setReturnDate] = useState('')
   const [tripType, setTripType] = useState<TripType>('one-way')
@@ -110,6 +154,8 @@ function App() {
   const displayedOffers = useMemo(() => sortedFlightOffers(offers, sortMode), [offers, sortMode])
   const currentSourceLabel = sourceLabel(resultMode)
   const currentMinimumPrice = minimumPriceLabel(offers)
+  const originSuggestions = useMemo(() => searchAirports(originQuery), [originQuery])
+  const destinationSuggestions = useMemo(() => searchAirports(destinationQuery), [destinationQuery])
 
   const selectedSaved = useMemo(
     () => Boolean(selectedOffer && favorites.some((favorite) => favorite.id === selectedOffer.id)),
@@ -136,13 +182,55 @@ function App() {
     setSelectedOffer(null)
   }
 
-  function applyRoute(route: (typeof popularRoutes)[number]) {
-    setOrigin(route.origin)
-    setDestination(route.destination)
+  function updateRecentRoutes(route: RouteSearch) {
+    const nextRoutes = [route, ...recentRoutes.filter((recent) => recent.origin !== route.origin || recent.destination !== route.destination)].slice(0, 4)
+    setRecentRoutes(nextRoutes)
+    window.localStorage.setItem(recentRoutesStorageKey, JSON.stringify(nextRoutes))
+  }
+
+  function setRoute(originCode: string, destinationCode: string) {
+    setOrigin(originCode)
+    setDestination(destinationCode)
+    setOriginQuery(airportLabel(originCode))
+    setDestinationQuery(airportLabel(destinationCode))
+    setActiveAirportField(null)
+  }
+
+  function applyRoute(route: RouteSearch) {
+    setRoute(route.origin, route.destination)
+  }
+
+  function swapRoute() {
+    setRoute(destination, origin)
+  }
+
+  function selectAirport(field: AirportField, airport: Airport) {
+    if (field === 'origin') {
+      setOrigin(airport.code)
+      setOriginQuery(airportDisplayName(airport))
+    } else {
+      setDestination(airport.code)
+      setDestinationQuery(airportDisplayName(airport))
+    }
+    setActiveAirportField(null)
+  }
+
+  function updateAirportQuery(field: AirportField, value: string) {
+    const directCode = formatAirportCode(value)
+    const directAirport = directCode.length === 3 ? findAirportByCode(directCode) : undefined
+
+    if (field === 'origin') {
+      setOriginQuery(directAirport ? airportDisplayName(directAirport) : value)
+      setOrigin(directAirport?.code ?? '')
+    } else {
+      setDestinationQuery(directAirport ? airportDisplayName(directAirport) : value)
+      setDestination(directAirport?.code ?? '')
+    }
+    setActiveAirportField(field)
   }
 
   function validateSearch() {
-    if (origin.length !== 3 || destination.length !== 3) return '공항 코드는 3자리로 입력해주세요.'
+    if (origin.length !== 3 || destination.length !== 3) return '출발/도착 도시를 검색해 공항을 선택해주세요.'
     if (!departureDate) return '출발일을 선택해주세요.'
     if (tripType === 'round-trip' && (!returnDate || returnDate <= departureDate)) return '귀국일은 출발일 이후로 선택해주세요.'
     return null
@@ -170,7 +258,8 @@ function App() {
       })
       setOffers(flightResult.offers)
       setResultMode(flightResult.mode)
-      setLastSearchSummary(`${origin} → ${destination} · ${tripType === 'round-trip' ? '왕복' : '편도'} · 성인 ${Number(adults) || 1}명`)
+      setLastSearchSummary(`${airportLabel(origin)} → ${airportLabel(destination)} · ${tripType === 'round-trip' ? '왕복' : '편도'} · 성인 ${Number(adults) || 1}명`)
+      updateRecentRoutes({ origin, destination })
       const contextResult = await getTripContext({ destination, amount: 200, currency: 'USD', live: true })
       setTripContext(contextResult)
     } catch {
@@ -180,6 +269,45 @@ function App() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  function renderAirportField(field: AirportField, label: string, value: string, suggestions: Airport[]) {
+    const query = field === 'origin' ? originQuery : destinationQuery
+    return (
+      <label className="airport-field">
+        {label}
+        <input
+          value={query}
+          onChange={(event) => updateAirportQuery(field, event.target.value)}
+          onFocus={() => setActiveAirportField(field)}
+          aria-label={`${label} 도시 또는 공항`}
+          aria-controls={`${field}-airport-options`}
+          aria-expanded={activeAirportField === field}
+          autoComplete="off"
+          placeholder="도시명·공항명·코드"
+        />
+        <span className="selected-code">선택됨 · {value}</span>
+        {activeAirportField === field && suggestions.length > 0 ? (
+          <div className="airport-options" role="listbox" id={`${field}-airport-options`} aria-label={`${label} 공항 추천`}>
+            {suggestions.map((airport) => (
+              <button
+                key={airport.code}
+                type="button"
+                role="option"
+                aria-label={airportOptionLabel(airport)}
+                className="airport-option"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => selectAirport(field, airport)}
+              >
+                <strong>{airport.cityKo} · {airport.code}</strong>
+                <span>{airport.airportKo} · {airport.cityEn}</span>
+                <small>{airport.countryKo}</small>
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </label>
+    )
   }
 
   return (
@@ -204,7 +332,7 @@ function App() {
         <article>
           <span>01</span>
           <strong>검색</strong>
-          <p>노선과 날짜를 입력하세요.</p>
+          <p>도시명만 입력해도 공항을 찾습니다.</p>
         </article>
         <article>
           <span>02</span>
@@ -221,76 +349,81 @@ function App() {
       <div className="app-layout">
         <div className="primary-panel">
           <section className="search-card" aria-label="항공권 검색 폼">
-        <div className="section-heading">
-          <p className="eyebrow">Search</p>
-          <h2>여정 입력</h2>
-        </div>
-        <div className="trip-toggle" aria-label="여정 유형">
-          <button type="button" className={tripType === 'one-way' ? 'toggle-active' : 'toggle-button'} onClick={() => setTripType('one-way')}>편도</button>
-          <button type="button" className={tripType === 'round-trip' ? 'toggle-active' : 'toggle-button'} onClick={() => setTripType('round-trip')}>왕복</button>
-        </div>
-        <div className="route-chips" aria-label="인기 노선">
-          {popularRoutes.map((route) => (
-            <button key={route.label} type="button" className="chip-button" onClick={() => applyRoute(route)}>{route.label}</button>
-          ))}
-        </div>
-        <div className="input-grid">
-          <label>
-            출발
-            <input value={origin} onChange={(event) => setOrigin(formatAirportCode(event.target.value))} aria-label="출발 공항" maxLength={3} />
-          </label>
-          <label>
-            도착
-            <input value={destination} onChange={(event) => setDestination(formatAirportCode(event.target.value))} aria-label="도착 공항" maxLength={3} />
-          </label>
-          <label>
-            출발일
-            <input type="date" value={departureDate} onChange={(event) => setDepartureDate(event.target.value)} aria-label="출발일" />
-          </label>
-          {tripType === 'round-trip' ? (
-            <label>
-              귀국일
-              <input type="date" value={returnDate} onChange={(event) => setReturnDate(event.target.value)} aria-label="귀국일" placeholder="선택" />
-            </label>
-          ) : null}
-          <label>
-            성인 수
-            <input type="number" min="1" value={adults} onChange={(event) => setAdults(event.target.value)} aria-label="성인 수" />
-          </label>
-          <label>
-            통화
-            <select value={currency} onChange={(event) => setCurrency(event.target.value)} aria-label="통화">
-              <option value="KRW">KRW</option>
-              <option value="USD">USD</option>
-              <option value="JPY">JPY</option>
-            </select>
-          </label>
-          <label>
-            정렬
-            <select value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)} aria-label="정렬">
-              <option value="recommended">추천순</option>
-              <option value="price">가격 낮은순</option>
-              <option value="departure">출발 빠른순</option>
-              <option value="stops">경유 적은순</option>
-            </select>
-          </label>
-        </div>
-        {lastSearchSummary ? (
-          <div className="search-summary" aria-label="검색 조건">
-            <strong>검색 조건</strong>
-            <span>{lastSearchSummary}</span>
-          </div>
-        ) : null}
-        <button type="button" onClick={handleSearch} disabled={isLoading}>
-          {isLoading ? '검색 중' : '항공권 검색'}
-        </button>
-        {error ? <p className="error-message">{error}</p> : null}
-      </section>
+            <div className="section-heading">
+              <p className="eyebrow">Search</p>
+              <h2>여정 입력</h2>
+            </div>
+            <div className="trip-toggle" aria-label="여정 유형">
+              <button type="button" className={tripType === 'one-way' ? 'toggle-active' : 'toggle-button'} onClick={() => setTripType('one-way')}>편도</button>
+              <button type="button" className={tripType === 'round-trip' ? 'toggle-active' : 'toggle-button'} onClick={() => setTripType('round-trip')}>왕복</button>
+            </div>
+            <div className="route-chips" aria-label="인기 노선">
+              {popularRoutes.map((route) => (
+                <button key={route.label} type="button" className="chip-button" onClick={() => applyRoute(route)}>{route.label}</button>
+              ))}
+            </div>
+            {recentRoutes.length > 0 ? (
+              <div className="route-chips recent-routes" aria-label="최근 검색">
+                <strong>최근 검색</strong>
+                {recentRoutes.map((route) => (
+                  <button key={`${route.origin}-${route.destination}`} type="button" className="chip-button" onClick={() => applyRoute(route)}>{displayRoute(route)}</button>
+                ))}
+              </div>
+            ) : null}
+            <div className="route-picker">
+              {renderAirportField('origin', '출발', origin, originSuggestions)}
+              <button type="button" className="swap-button" aria-label="출발지와 도착지 바꾸기" onClick={swapRoute}>⇄</button>
+              {renderAirportField('destination', '도착', destination, destinationSuggestions)}
+            </div>
+            <div className="input-grid compact-grid">
+              <label>
+                출발일
+                <input type="date" value={departureDate} onChange={(event) => setDepartureDate(event.target.value)} aria-label="출발일" />
+              </label>
+              {tripType === 'round-trip' ? (
+                <label>
+                  귀국일
+                  <input type="date" value={returnDate} onChange={(event) => setReturnDate(event.target.value)} aria-label="귀국일" placeholder="선택" />
+                </label>
+              ) : null}
+              <label>
+                성인 수
+                <input type="number" min="1" value={adults} onChange={(event) => setAdults(event.target.value)} aria-label="성인 수" />
+              </label>
+              <label>
+                통화
+                <select value={currency} onChange={(event) => setCurrency(event.target.value)} aria-label="통화">
+                  <option value="KRW">KRW</option>
+                  <option value="USD">USD</option>
+                  <option value="JPY">JPY</option>
+                </select>
+              </label>
+              <label>
+                정렬
+                <select value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)} aria-label="정렬">
+                  <option value="recommended">추천순</option>
+                  <option value="price">가격 낮은순</option>
+                  <option value="departure">출발 빠른순</option>
+                  <option value="stops">경유 적은순</option>
+                </select>
+              </label>
+            </div>
+            {lastSearchSummary ? (
+              <div className="search-summary" aria-label="검색 조건">
+                <strong>검색 조건</strong>
+                <span>{lastSearchSummary}</span>
+              </div>
+            ) : null}
+            <button type="button" onClick={handleSearch} disabled={isLoading}>
+              {isLoading ? '검색 중' : '항공권 검색'}
+            </button>
+            {error ? <p className="error-message">{error}</p> : null}
+          </section>
 
           <section className="flight-map-card" aria-label="선택한 여정 미리보기">
             <div>
               <p className="eyebrow">Route map</p>
-              <h2>{origin} 출발 · {destination} 도착</h2>
+              <h2>{airportLabel(origin)} 출발 · {airportLabel(destination)} 도착</h2>
               <p>출발일 {departureDate || '선택 전'} · {tripType === 'round-trip' ? '왕복' : '편도'}</p>
             </div>
             <div className="route-visual" aria-hidden="true">
@@ -302,130 +435,129 @@ function App() {
         </div>
 
         <div className="secondary-panel">
-
-      <section className="results-card" aria-label="항공권 후보">
-        <div className="section-heading results-heading">
-          <div>
-            <p className="eyebrow">Offers</p>
-            <h2>추천 항공권</h2>
-          </div>
-          {currentSourceLabel ? (
-            <div className="result-meta" aria-label="검색 결과 상태">
-              <span>{currentSourceLabel}</span>
-              {currentMinimumPrice ? <strong>{currentMinimumPrice}</strong> : null}
+          <section className="results-card" aria-label="항공권 후보">
+            <div className="section-heading results-heading">
+              <div>
+                <p className="eyebrow">Offers</p>
+                <h2>추천 항공권</h2>
+              </div>
+              {currentSourceLabel ? (
+                <div className="result-meta" aria-label="검색 결과 상태">
+                  <span>{currentSourceLabel}</span>
+                  {currentMinimumPrice ? <strong>{currentMinimumPrice}</strong> : null}
+                </div>
+              ) : null}
             </div>
-          ) : null}
-        </div>
-        {offers.length === 0 ? (
-          <div className="empty-preview">
-            <div className="preview-plane" aria-hidden="true">✈</div>
-            <strong>검색하면 이곳에 추천 항공권이 뜹니다.</strong>
-            <p>{origin}에서 {destination}까지, 가격·시간·예약 링크를 한눈에 비교하세요.</p>
-            <span>예상 카드 · 항공사 · 시간 · 가격 · 상세 보기</span>
-          </div>
-        ) : (
-          <div className="offer-list">
-            {displayedOffers.map((offer) => (
-              <article className="offer-card" key={offer.id} aria-label={`${offer.airline} ${offer.origin} ${offer.destination}`}>
-                <div>
-                  <strong>{offer.airline}</strong>
-                  <p>{offer.origin} → {offer.destination}</p>
-                  <p>{formatFlightTime(offer)}</p>
-                  <small>{offer.stops === 0 ? '직항' : `${offer.stops}회 경유`} · 예약 사이트 연결</small>
-                  <div className="booking-links">
-                    {offer.booking_url ? (
-                      <a href={offer.booking_url} target="_blank" rel="noreferrer">Aviasales에서 보기</a>
-                    ) : null}
-                    <a href={bookingUrl(offer, 'google')} target="_blank" rel="noreferrer">Google Flights에서 보기</a>
-                    <a href={bookingUrl(offer, 'skyscanner')} target="_blank" rel="noreferrer">Skyscanner에서 보기</a>
-                  </div>
-                </div>
-                <div className="offer-action">
-                  <b>{formatCurrency(offer.price, offer.currency)}</b>
-                  <button type="button" className="ghost-button" onClick={() => setSelectedOffer(offer)}>상세 보기</button>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {tripContext ? (
-        <section className="context-card" aria-label="여행 체크">
-          <div className="section-heading">
-            <p className="eyebrow">Live</p>
-            <h2>여행 체크</h2>
-          </div>
-          <div className="context-grid">
-            <p>
-              <strong>날씨</strong>
-              <span>도착지 기준 · {tripContext.weather.summary} · {tripContext.weather.temperature_c}℃</span>
-            </p>
-            <p>
-              <strong>환율</strong>
-              <span>200 USD 환산 · 약 {tripContext.exchange.converted_amount?.toLocaleString('ko-KR')} KRW</span>
-              <small>{exchangeTimestampLabel(tripContext.exchange.updated_at)}</small>
-            </p>
-            {tripContext.travel_tip ? (
-              <p>
-                <strong>여행 코멘트</strong>
-                <span>{tripContext.travel_tip}</span>
-              </p>
-            ) : null}
-          </div>
-          {tripContext.forecast?.length ? (
-            <div className="forecast-panel">
-              <strong>3일 날씨</strong>
-              <div className="forecast-list">
-                {tripContext.forecast.map((day) => (
-                  <p key={day.date}>
-                    <span>{day.date.slice(5)}</span>
-                    <b>{day.summary}</b>
-                    <small>{day.min_c}℃ / {day.max_c}℃ · 강수 {day.precipitation_probability}%</small>
-                  </p>
+            {offers.length === 0 ? (
+              <div className="empty-preview">
+                <div className="preview-plane" aria-hidden="true">✈</div>
+                <strong>검색하면 이곳에 추천 항공권이 뜹니다.</strong>
+                <p>{airportLabel(origin)}에서 {airportLabel(destination)}까지, 가격·시간·예약 링크를 한눈에 비교하세요.</p>
+                <span>예상 카드 · 항공사 · 시간 · 가격 · 상세 보기</span>
+              </div>
+            ) : (
+              <div className="offer-list">
+                {displayedOffers.map((offer) => (
+                  <article className="offer-card" key={offer.id} aria-label={`${offer.airline} ${offer.origin} ${offer.destination}`}>
+                    <div>
+                      <strong>{offer.airline}</strong>
+                      <p>{offer.origin} → {offer.destination}</p>
+                      <p>{formatFlightTime(offer)}</p>
+                      <small>{offer.stops === 0 ? '직항' : `${offer.stops}회 경유`} · 예약 사이트 연결</small>
+                      <div className="booking-links">
+                        {offer.booking_url ? (
+                          <a href={offer.booking_url} target="_blank" rel="noreferrer">Aviasales에서 보기</a>
+                        ) : null}
+                        <a href={bookingUrl(offer, 'google')} target="_blank" rel="noreferrer">Google Flights에서 보기</a>
+                        <a href={bookingUrl(offer, 'skyscanner')} target="_blank" rel="noreferrer">Skyscanner에서 보기</a>
+                      </div>
+                    </div>
+                    <div className="offer-action">
+                      <b>{formatCurrency(offer.price, offer.currency)}</b>
+                      <button type="button" className="ghost-button" onClick={() => setSelectedOffer(offer)}>상세 보기</button>
+                    </div>
+                  </article>
                 ))}
               </div>
-            </div>
-          ) : null}
-        </section>
-      ) : null}
+            )}
+          </section>
 
-      {favorites.length > 0 ? (
-        <section className="saved-card" aria-label="저장한 항공편">
-          <div className="saved-header">
-            <div className="section-heading">
-              <p className="eyebrow">Saved</p>
-              <h2>저장한 항공편</h2>
-            </div>
-            <div className="saved-tools">
-              <span className="saved-count">저장 {favorites.length}</span>
-              <button type="button" className="ghost-button danger-button" onClick={clearFavorites}>저장 전체 삭제</button>
-            </div>
-          </div>
-          <div className="saved-list">
-            {favorites.map((favorite) => (
-              <article className="saved-item" key={favorite.id}>
-                <div>
-                  <strong>{favorite.airline} · {favorite.origin} → {favorite.destination}</strong>
-                  <p>{timeParts(favorite).departure} · {timeParts(favorite).arrival}</p>
+          {tripContext ? (
+            <section className="context-card" aria-label="여행 체크">
+              <div className="section-heading">
+                <p className="eyebrow">Live</p>
+                <h2>여행 체크</h2>
+              </div>
+              <div className="context-grid">
+                <p>
+                  <strong>날씨</strong>
+                  <span>도착지 기준 · {tripContext.weather.summary} · {tripContext.weather.temperature_c}℃</span>
+                </p>
+                <p>
+                  <strong>환율</strong>
+                  <span>200 USD 환산 · 약 {tripContext.exchange.converted_amount?.toLocaleString('ko-KR')} KRW</span>
+                  <small>{exchangeTimestampLabel(tripContext.exchange.updated_at)}</small>
+                </p>
+                {tripContext.travel_tip ? (
+                  <p>
+                    <strong>여행 코멘트</strong>
+                    <span>{tripContext.travel_tip}</span>
+                  </p>
+                ) : null}
+              </div>
+              {tripContext.forecast?.length ? (
+                <div className="forecast-panel">
+                  <strong>3일 날씨</strong>
+                  <div className="forecast-list">
+                    {tripContext.forecast.map((day) => (
+                      <p key={day.date}>
+                        <span>{day.date.slice(5)}</span>
+                        <b>{day.summary}</b>
+                        <small>{day.min_c}℃ / {day.max_c}℃ · 강수 {day.precipitation_probability}%</small>
+                      </p>
+                    ))}
+                  </div>
                 </div>
-                <b>{formatCurrency(favorite.price, favorite.currency)}</b>
-                <div className="saved-actions">
-                  <button type="button" className="ghost-button" onClick={() => setSelectedOffer(favorite)}>저장 항공편 상세</button>
-                  <button type="button" className="ghost-button danger-button" onClick={() => removeFavorite(favorite.id)}>저장 삭제</button>
+              ) : null}
+            </section>
+          ) : null}
+
+          {favorites.length > 0 ? (
+            <section className="saved-card" aria-label="저장한 항공편">
+              <div className="saved-header">
+                <div className="section-heading">
+                  <p className="eyebrow">Saved</p>
+                  <h2>저장한 항공편</h2>
                 </div>
-              </article>
-            ))}
-          </div>
-        </section>
-      ) : null}
+                <div className="saved-tools">
+                  <span className="saved-count">저장 {favorites.length}</span>
+                  <button type="button" className="ghost-button danger-button" onClick={clearFavorites}>저장 전체 삭제</button>
+                </div>
+              </div>
+              <div className="saved-list">
+                {favorites.map((favorite) => (
+                  <article className="saved-item" key={favorite.id}>
+                    <div>
+                      <strong>{favorite.airline} · {favorite.origin} → {favorite.destination}</strong>
+                      <p>{timeParts(favorite).departure} · {timeParts(favorite).arrival}</p>
+                    </div>
+                    <b>{formatCurrency(favorite.price, favorite.currency)}</b>
+                    <div className="saved-actions">
+                      <button type="button" className="ghost-button" onClick={() => setSelectedOffer(favorite)}>저장 항공편 상세</button>
+                      <button type="button" className="ghost-button danger-button" onClick={() => removeFavorite(favorite.id)}>저장 삭제</button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          ) : null}
         </div>
       </div>
 
       <div className="mobile-action-bar" aria-label="모바일 빠른 실행">
         <div>
-          <strong>{origin} 출발</strong>
-          <span>{destination} 도착 · {tripType === 'round-trip' ? '왕복' : '편도'} · 성인 {Number(adults) || 1}명</span>
+          <strong>{airportLabel(origin)} 출발</strong>
+          <span>{airportLabel(destination)} 도착 · {tripType === 'round-trip' ? '왕복' : '편도'} · 성인 {Number(adults) || 1}명</span>
         </div>
         <button type="button" aria-label="모바일 항공권 검색" onClick={handleSearch} disabled={isLoading}>
           {isLoading ? '검색 중' : '검색하기'}

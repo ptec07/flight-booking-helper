@@ -51,13 +51,13 @@ describe('next-step product improvements', () => {
     const fetchMock = stubSearchFetch()
     render(<App />)
 
-    await userEvent.clear(screen.getByLabelText('출발 공항'))
-    await userEvent.type(screen.getByLabelText('출발 공항'), 'icn')
-    expect(screen.getByLabelText('출발 공항')).toHaveValue('ICN')
+    await userEvent.clear(screen.getByLabelText('출발 도시 또는 공항'))
+    await userEvent.type(screen.getByLabelText('출발 도시 또는 공항'), 'icn')
+    expect(screen.getByLabelText('출발 도시 또는 공항')).toHaveValue('서울 · ICN')
 
     expect(screen.getByRole('button', { name: '서울 → 도쿄' })).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: '서울 → 오사카' }))
-    expect(screen.getByLabelText('도착 공항')).toHaveValue('KIX')
+    expect(screen.getByLabelText('도착 도시 또는 공항')).toHaveValue('오사카 · KIX')
 
     await userEvent.click(screen.getByRole('button', { name: '왕복' }))
     await userEvent.clear(screen.getByLabelText('귀국일'))
@@ -70,7 +70,7 @@ describe('next-step product improvements', () => {
     await userEvent.click(screen.getByRole('button', { name: '항공권 검색' }))
 
     expect(await screen.findByText('검색 조건')).toBeInTheDocument()
-    expect(screen.getByText('ICN → KIX · 왕복 · 성인 1명')).toBeInTheDocument()
+    expect(screen.getByText('서울 · ICN → 오사카 · KIX · 왕복 · 성인 1명')).toBeInTheDocument()
     expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('origin=ICN&destination=KIX'))
   })
 

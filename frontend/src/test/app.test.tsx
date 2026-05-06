@@ -73,6 +73,45 @@ describe('Flight Booking Helper app', () => {
     expect(screen.queryByText('백업 데이터')).not.toBeInTheDocument()
   })
 
+  it('searches airports by Korean aliases, selects autocomplete results, and swaps the route', async () => {
+    const fetchMock = stubSearchFetch()
+
+    render(<App />)
+
+    const originInput = screen.getByLabelText('출발 도시 또는 공항')
+    const destinationInput = screen.getByLabelText('도착 도시 또는 공항')
+
+    await userEvent.clear(originInput)
+    await userEvent.type(originInput, '서울')
+    await userEvent.click(await screen.findByRole('option', { name: /서울 · ICN/ }))
+
+    await userEvent.clear(destinationInput)
+    await userEvent.type(destinationInput, '도쿄')
+    await userEvent.click(await screen.findByRole('option', { name: /도쿄 · NRT/ }))
+
+    expect(originInput).toHaveValue('서울 · ICN')
+    expect(destinationInput).toHaveValue('도쿄 · NRT')
+
+    await userEvent.click(screen.getByRole('button', { name: '출발지와 도착지 바꾸기' }))
+    expect(originInput).toHaveValue('도쿄 · NRT')
+    expect(destinationInput).toHaveValue('서울 · ICN')
+
+    await userEvent.click(screen.getByRole('button', { name: '항공권 검색' }))
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('origin=NRT&destination=ICN'))
+  })
+
+  it('blocks search when airport text is edited without selecting a valid airport', async () => {
+    const fetchMock = stubSearchFetch()
+    render(<App />)
+
+    await userEvent.clear(screen.getByLabelText('도착 도시 또는 공항'))
+    await userEvent.type(screen.getByLabelText('도착 도시 또는 공항'), '없는도시')
+    await userEvent.click(screen.getByRole('button', { name: '항공권 검색' }))
+
+    expect(screen.getByText('출발/도착 도시를 검색해 공항을 선택해주세요.')).toBeInTheDocument()
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
   it('loads flight offers and live trip context from FastAPI with expanded search params', async () => {
     const fetchMock = stubSearchFetch()
 
@@ -119,6 +158,18 @@ describe('Flight Booking Helper app', () => {
     await userEvent.selectOptions(screen.getByLabelText('정렬'), 'stops')
     cards = screen.getAllByLabelText(/ICN NRT/)
     expect(cards[0]).toHaveTextContent('Korean Air')
+  })
+
+  it('persists recent airport searches after a successful search', async () => {
+    stubSearchFetch()
+    render(<App />)
+
+    await userEvent.click(screen.getByRole('button', { name: '서울 → 오사카' }))
+    await userEvent.click(screen.getByRole('button', { name: '항공권 검색' }))
+
+    expect(await screen.findByText('최근 검색')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '서울 · ICN → 오사카 · KIX' })).toBeInTheDocument()
+    expect(JSON.parse(window.localStorage.getItem('skytrip:recent-routes') ?? '[]')).toHaveLength(1)
   })
 
   it('toggles one-way and round-trip search params', async () => {

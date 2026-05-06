@@ -144,6 +144,7 @@ function App() {
   const [activeAirportField, setActiveAirportField] = useState<AirportField | null>(null)
   const [recentRoutes, setRecentRoutes] = useState<RouteSearch[]>(readRecentRoutes)
   const [departureDate, setDepartureDate] = useState('2026-06-01')
+  const [arrivalDate, setArrivalDate] = useState('2026-06-01')
   const [returnDate, setReturnDate] = useState('')
   const [tripType, setTripType] = useState<TripType>('one-way')
   const [adults, setAdults] = useState('1')
@@ -249,8 +250,15 @@ function App() {
   function validateSearch() {
     if (origin.length !== 3 || destination.length !== 3) return '출발/도착 도시를 검색해 공항을 선택해주세요.'
     if (!departureDate) return '출발일을 선택해주세요.'
+    if (!arrivalDate) return '도착일을 선택해주세요.'
+    if (arrivalDate < departureDate) return '도착일은 출발일 이후로 선택해주세요.'
     if (tripType === 'round-trip' && (!returnDate || returnDate <= departureDate)) return '귀국일은 출발일 이후로 선택해주세요.'
     return null
+  }
+
+  function updateDepartureDate(value: string) {
+    setDepartureDate(value)
+    if (!arrivalDate || arrivalDate < value) setArrivalDate(value)
   }
 
   async function handleSearch() {
@@ -378,7 +386,11 @@ function App() {
             <div className="input-grid compact-grid">
               <label>
                 출발일
-                <input type="date" value={departureDate} onChange={(event) => setDepartureDate(event.target.value)} aria-label="출발일" />
+                <input type="date" value={departureDate} onChange={(event) => updateDepartureDate(event.target.value)} aria-label="출발일" />
+              </label>
+              <label>
+                도착일
+                <input type="date" value={arrivalDate} min={departureDate} onChange={(event) => setArrivalDate(event.target.value)} aria-label="도착일" />
               </label>
               {tripType === 'round-trip' ? (
                 <label>
@@ -418,7 +430,7 @@ function App() {
             <div>
               <p className="eyebrow">Route map</p>
               <h2>{airportLabel(origin)} 출발 · {airportLabel(destination)} 도착</h2>
-              <p>출발일 {departureDate || '선택 전'} · {tripType === 'round-trip' ? '왕복' : '편도'}</p>
+              <p>출발일 {departureDate || '선택 전'} · 도착일 {arrivalDate || '선택 전'} · {tripType === 'round-trip' ? '왕복' : '편도'}</p>
             </div>
             <div className="route-visual" aria-hidden="true">
               <span>{origin}</span>

@@ -60,6 +60,9 @@ describe('Flight Booking Helper app', () => {
     expect(screen.getByLabelText('성인 수')).toBeInTheDocument()
     expect(screen.getByLabelText('통화')).toBeInTheDocument()
     expect(screen.getByLabelText('출발일')).toHaveAttribute('type', 'date')
+    expect(screen.getByLabelText('도착일')).toHaveAttribute('type', 'date')
+    const dateInputs = [screen.getByLabelText('출발일'), screen.getByLabelText('도착일')]
+    expect(dateInputs[0].compareDocumentPosition(dateInputs[1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(screen.getByLabelText('정렬')).toBeInTheDocument()
     expect(screen.queryByLabelText('연동 상태')).not.toBeInTheDocument()
     expect(screen.queryByText('연동 상태')).not.toBeInTheDocument()
@@ -196,6 +199,7 @@ describe('Flight Booking Helper app', () => {
     render(<App />)
 
     await userEvent.click(screen.getByRole('button', { name: '왕복' }))
+    expect(screen.getByLabelText('도착일')).toBeInTheDocument()
     await userEvent.type(screen.getByLabelText('귀국일'), '2026-06-07')
     await userEvent.click(screen.getByRole('button', { name: '항공권 검색' }))
 

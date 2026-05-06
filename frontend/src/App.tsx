@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
 import { getTripContext, searchFlightOffers, type FlightOffer, type TripContext } from './api'
 
-const apiBadges = ['Aviasales', 'Open-Meteo', '환율', '백업 데이터']
+const apiBadges = ['Aviasales', 'Open-Meteo', '환율']
 const favoriteStorageKey = 'skytrip:favorites'
 type TripType = 'one-way' | 'round-trip'
+type SortMode = 'recommended' | 'price' | 'departure' | 'stops'
 
 const popularRoutes = [
   { label: '서울 → 도쿄', origin: 'ICN', destination: 'NRT' },
@@ -62,6 +63,32 @@ function exchangeTimestampLabel(value?: string) {
   return `환율 기준 · ${value.slice(0, 10)}`
 }
 
+function sourceLabel(mode: string | null) {
+  if (!mode) return null
+  if (mode === 'aviasales') return '실시간 Aviasales 결과'
+  if (mode.includes('fallback') || mode === 'fixture') return '백업 데이터 결과'
+  return `${mode} 결과`
+}
+
+function offerTimeValue(offer: FlightOffer) {
+  return new Date(offer.departure_time).getTime()
+}
+
+function sortedFlightOffers(offers: FlightOffer[], sortMode: SortMode) {
+  return [...offers].sort((a, b) => {
+    if (sortMode === 'price') return a.price - b.price
+    if (sortMode === 'departure') return offerTimeValue(a) - offerTimeValue(b)
+    if (sortMode === 'stops') return a.stops - b.stops || a.price - b.price
+    return 0
+  })
+}
+
+function minimumPriceLabel(offers: FlightOffer[]) {
+  if (offers.length === 0) return null
+  const cheapest = offers.reduce((best, offer) => (offer.price < best.price ? offer : best), offers[0])
+  return `최저가 ${formatCurrency(cheapest.price, cheapest.currency)}`
+}
+
 function App() {
   const [origin, setOrigin] = useState('ICN')
   const [destination, setDestination] = useState('NRT')
@@ -70,13 +97,19 @@ function App() {
   const [tripType, setTripType] = useState<TripType>('one-way')
   const [adults, setAdults] = useState('1')
   const [currency, setCurrency] = useState('KRW')
+  const [sortMode, setSortMode] = useState<SortMode>('recommended')
   const [offers, setOffers] = useState<FlightOffer[]>([])
+  const [resultMode, setResultMode] = useState<string | null>(null)
   const [selectedOffer, setSelectedOffer] = useState<FlightOffer | null>(null)
   const [favorites, setFavorites] = useState<FlightOffer[]>(readFavorites)
   const [tripContext, setTripContext] = useState<TripContext | null>(null)
   const [lastSearchSummary, setLastSearchSummary] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const displayedOffers = useMemo(() => sortedFlightOffers(offers, sortMode), [offers, sortMode])
+  const currentSourceLabel = sourceLabel(resultMode)
+  const currentMinimumPrice = minimumPriceLabel(offers)
 
   const selectedSaved = useMemo(
     () => Boolean(selectedOffer && favorites.some((favorite) => favorite.id === selectedOffer.id)),
@@ -136,12 +169,14 @@ function App() {
         currency,
       })
       setOffers(flightResult.offers)
+      setResultMode(flightResult.mode)
       setLastSearchSummary(`${origin} → ${destination} · ${tripType === 'round-trip' ? '왕복' : '편도'} · 성인 ${Number(adults) || 1}명`)
       const contextResult = await getTripContext({ destination, amount: 200, currency: 'USD', live: true })
       setTripContext(contextResult)
     } catch {
       setError('정보를 불러오지 못했어요. 백엔드를 확인해주세요.')
       setOffers([])
+      setResultMode(null)
     } finally {
       setIsLoading(false)
     }
@@ -210,12 +245,12 @@ function App() {
           </label>
           <label>
             출발일
-            <input value={departureDate} onChange={(event) => setDepartureDate(event.target.value)} aria-label="출발일" />
+            <input type="date" value={departureDate} onChange={(event) => setDepartureDate(event.target.value)} aria-label="출발일" />
           </label>
           {tripType === 'round-trip' ? (
             <label>
               귀국일
-              <input value={returnDate} onChange={(event) => setReturnDate(event.target.value)} aria-label="귀국일" placeholder="선택" />
+              <input type="date" value={returnDate} onChange={(event) => setReturnDate(event.target.value)} aria-label="귀국일" placeholder="선택" />
             </label>
           ) : null}
           <label>
@@ -228,6 +263,15 @@ function App() {
               <option value="KRW">KRW</option>
               <option value="USD">USD</option>
               <option value="JPY">JPY</option>
+            </select>
+          </label>
+          <label>
+            정렬
+            <select value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)} aria-label="정렬">
+              <option value="recommended">추천순</option>
+              <option value="price">가격 낮은순</option>
+              <option value="departure">출발 빠른순</option>
+              <option value="stops">경유 적은순</option>
             </select>
           </label>
         </div>
@@ -260,9 +304,17 @@ function App() {
         <div className="secondary-panel">
 
       <section className="results-card" aria-label="항공권 후보">
-        <div className="section-heading">
-          <p className="eyebrow">Offers</p>
-          <h2>추천 항공권</h2>
+        <div className="section-heading results-heading">
+          <div>
+            <p className="eyebrow">Offers</p>
+            <h2>추천 항공권</h2>
+          </div>
+          {currentSourceLabel ? (
+            <div className="result-meta" aria-label="검색 결과 상태">
+              <span>{currentSourceLabel}</span>
+              {currentMinimumPrice ? <strong>{currentMinimumPrice}</strong> : null}
+            </div>
+          ) : null}
         </div>
         {offers.length === 0 ? (
           <div className="empty-preview">
@@ -273,7 +325,7 @@ function App() {
           </div>
         ) : (
           <div className="offer-list">
-            {offers.map((offer) => (
+            {displayedOffers.map((offer) => (
               <article className="offer-card" key={offer.id} aria-label={`${offer.airline} ${offer.origin} ${offer.destination}`}>
                 <div>
                   <strong>{offer.airline}</strong>

@@ -45,6 +45,32 @@ def _arrival_time(departure_date: str, duration_minutes: int | float | None) -> 
     return arrival.isoformat()
 
 
+AIRLINE_NAMES = {
+    "7C": "Jeju Air",
+    "BX": "Air Busan",
+    "JL": "Japan Airlines",
+    "KE": "Korean Air",
+    "LJ": "Jin Air",
+    "NH": "All Nippon Airways",
+    "OZ": "Asiana Airlines",
+    "RS": "Air Seoul",
+    "TW": "T'way Air",
+    "WE": "Thai Smile",
+    "ZE": "Eastar Jet",
+}
+
+
+def airline_label(value: str | None) -> str:
+    label = (value or "").strip()
+    if not label:
+        return "Aviasales"
+    code = label.upper()
+    if len(code) != 2 or not code.isalnum():
+        return label
+    name = AIRLINE_NAMES.get(code)
+    return f"{name} ({code})" if name else code
+
+
 def _booking_url(link: str | None, marker: str | None) -> str | None:
     if not link:
         return None
@@ -63,7 +89,7 @@ def normalize_aviasales_offer(raw_offer: dict, currency: str, marker: str | None
     destination = (raw_offer.get("destination") or "").upper()
     departure_date = raw_offer.get("depart_date") or raw_offer.get("departure_at") or datetime.utcnow().strftime("%Y-%m-%d")
     duration = raw_offer.get("duration")
-    airline = raw_offer.get("airline") or raw_offer.get("gate") or "Aviasales"
+    airline = airline_label(raw_offer.get("airline") or raw_offer.get("gate"))
     departure_time = _parse_departure(departure_date).isoformat()
     return {
         "id": f"aviasales-{origin}-{destination}-{departure_date}-{index}",

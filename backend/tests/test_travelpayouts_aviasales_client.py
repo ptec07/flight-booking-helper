@@ -74,7 +74,7 @@ def test_aviasales_client_calls_prices_for_dates_and_normalizes_offers():
     assert offers == [
         {
             "id": "aviasales-ICN-NRT-2026-06-01T09:10:00+09:00-0",
-            "airline": "KE",
+            "airline": "Korean Air (KE)",
             "origin": "ICN",
             "destination": "NRT",
             "departure_time": "2026-06-01T09:10:00+09:00",
@@ -104,3 +104,57 @@ def test_aviasales_client_uses_one_way_when_return_date_is_missing():
 
     assert http.calls[0]["params"]["one_way"] == "true"
     assert "marker" not in http.calls[0]["params"]
+
+
+def test_aviasales_normalizes_airline_code_to_readable_name():
+    http = RecordingHttpClient(
+        {
+            "success": True,
+            "data": [
+                {
+                    "origin": "SEL",
+                    "destination": "TYO",
+                    "departure_at": "2026-06-01T11:20:00+09:00",
+                    "value": 146233,
+                    "airline": "WE",
+                    "number_of_changes": 0,
+                    "duration": 150,
+                    "link": "/search/ICN0106NRT1",
+                }
+            ],
+        }
+    )
+    client = AviasalesClient(token="tp-token", http_client=http)
+
+    offers = client.search_flight_offers(
+        AviasalesFlightSearchQuery(origin="ICN", destination="NRT", departure_date="2026-06-01", currency="KRW")
+    )
+
+    assert offers[0]["airline"] == "Thai Smile (WE)"
+
+
+def test_aviasales_preserves_non_airline_provider_gate_label():
+    http = RecordingHttpClient(
+        {
+            "success": True,
+            "data": [
+                {
+                    "origin": "ICN",
+                    "destination": "NRT",
+                    "departure_at": "2026-06-01T09:10:00+09:00",
+                    "value": 198000,
+                    "gate": "Kiwi.com",
+                    "number_of_changes": 0,
+                    "duration": 140,
+                    "link": "/search/ICN0106NRT1",
+                }
+            ],
+        }
+    )
+    client = AviasalesClient(token="tp-token", http_client=http)
+
+    offers = client.search_flight_offers(
+        AviasalesFlightSearchQuery(origin="ICN", destination="NRT", departure_date="2026-06-01", currency="KRW")
+    )
+
+    assert offers[0]["airline"] == "Kiwi.com"

@@ -74,16 +74,17 @@ describe('next-step product improvements', () => {
     expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('origin=ICN&destination=KIX'))
   })
 
-  it('shows stronger travel information and external booking links after search', async () => {
+  it('shows exchange information and external booking links after search', async () => {
     stubSearchFetch()
     render(<App />)
 
     await userEvent.click(screen.getByRole('button', { name: '항공권 검색' }))
 
-    expect(await screen.findByText('3일 날씨')).toBeInTheDocument()
-    expect(screen.getByText('비 예보가 있어 작은 우산을 챙기세요.')).toBeInTheDocument()
+    expect(await screen.findByText('여행 체크')).toBeInTheDocument()
+    expect(screen.queryByText('3일 날씨')).not.toBeInTheDocument()
+    expect(screen.queryByText('비 예보가 있어 작은 우산을 챙기세요.')).not.toBeInTheDocument()
+    expect(screen.queryByText(/강수 70%/)).not.toBeInTheDocument()
     expect(screen.getByText(/환율 기준/)).toBeInTheDocument()
-    expect(screen.getByText(/강수 70%/)).toBeInTheDocument()
 
     const offer = await screen.findByRole('article', { name: /Korean Air ICN NRT/ })
     expect(within(offer).getByRole('link', { name: 'Google Flights에서 보기' })).toHaveAttribute('href', expect.stringContaining('google.com/travel/flights'))

@@ -340,7 +340,7 @@ function App() {
         <div className="hero-text">
           <p className="eyebrow">Flight helper</p>
           <h1>SkyTrip</h1>
-          <p className="hero-copy">항공권·날씨·환율을 한 번에 확인하세요.</p>
+          <p className="hero-copy">항공권·환율을 한 번에 확인하세요.</p>
         </div>
       </section>
 
@@ -488,35 +488,11 @@ function App() {
               </div>
               <div className="context-grid">
                 <p>
-                  <strong>날씨</strong>
-                  <span>도착지 기준 · {tripContext.weather.summary} · {tripContext.weather.temperature_c}℃</span>
-                </p>
-                <p>
                   <strong>환율</strong>
                   <span>200 USD 환산 · 약 {tripContext.exchange.converted_amount?.toLocaleString('ko-KR')} KRW</span>
                   <small>{exchangeTimestampLabel(tripContext.exchange.updated_at)}</small>
                 </p>
-                {tripContext.travel_tip ? (
-                  <p>
-                    <strong>여행 코멘트</strong>
-                    <span>{tripContext.travel_tip}</span>
-                  </p>
-                ) : null}
               </div>
-              {tripContext.forecast?.length ? (
-                <div className="forecast-panel">
-                  <strong>3일 날씨</strong>
-                  <div className="forecast-list">
-                    {tripContext.forecast.map((day) => (
-                      <p key={day.date}>
-                        <span>{day.date.slice(5)}</span>
-                        <b>{day.summary}</b>
-                        <small>{day.min_c}℃ / {day.max_c}℃ · 강수 {day.precipitation_probability}%</small>
-                      </p>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
             </section>
           ) : null}
 

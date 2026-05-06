@@ -571,47 +571,6 @@ button:disabled {
   margin-top: 6px;
 }
 
-.forecast-panel {
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  background: #ffffff;
-  margin-top: 12px;
-  padding: 16px;
-}
-
-.forecast-panel > strong {
-  display: block;
-  margin-bottom: 12px;
-}
-
-.forecast-list {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.forecast-list p {
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: var(--sky-50);
-  padding: 12px;
-}
-
-.forecast-list span,
-.forecast-list b,
-.forecast-list small {
-  display: block;
-}
-
-.forecast-list b {
-  margin-top: 5px;
-}
-
-.forecast-list small {
-  color: var(--muted);
-  margin-top: 5px;
-}
-
 .booking-links {
   display: flex;
   flex-wrap: wrap;
@@ -808,8 +767,7 @@ button:disabled {
 
   .input-grid,
   .route-picker,
-  .context-grid,
-  .forecast-list {
+  .context-grid {
     grid-template-columns: 1fr;
   }
 

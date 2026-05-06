@@ -144,7 +144,6 @@ function App() {
   const [activeAirportField, setActiveAirportField] = useState<AirportField | null>(null)
   const [recentRoutes, setRecentRoutes] = useState<RouteSearch[]>(readRecentRoutes)
   const [departureDate, setDepartureDate] = useState('2026-06-01')
-  const [arrivalDate, setArrivalDate] = useState('2026-06-01')
   const [returnDate, setReturnDate] = useState('')
   const [tripType, setTripType] = useState<TripType>('one-way')
   const [adults, setAdults] = useState('1')
@@ -152,14 +151,19 @@ function App() {
   const [sortMode, setSortMode] = useState<SortMode>('recommended')
   const [offers, setOffers] = useState<FlightOffer[]>([])
   const [resultMode, setResultMode] = useState<string | null>(null)
+  const [returnOffers, setReturnOffers] = useState<FlightOffer[]>([])
+  const [returnResultMode, setReturnResultMode] = useState<string | null>(null)
   const [selectedOffer, setSelectedOffer] = useState<FlightOffer | null>(null)
   const [favorites, setFavorites] = useState<FlightOffer[]>(readFavorites)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const displayedOffers = useMemo(() => sortedFlightOffers(offers, sortMode), [offers, sortMode])
+  const displayedReturnOffers = useMemo(() => sortedFlightOffers(returnOffers, sortMode), [returnOffers, sortMode])
   const currentSourceLabel = sourceLabel(resultMode)
+  const returnSourceLabel = sourceLabel(returnResultMode)
   const currentMinimumPrice = minimumPriceLabel(offers)
+  const returnMinimumPrice = minimumPriceLabel(returnOffers)
   const originSuggestions = useMemo(() => searchAirports(originQuery), [originQuery])
   const destinationSuggestions = useMemo(() => searchAirports(destinationQuery), [destinationQuery])
 
@@ -250,15 +254,14 @@ function App() {
   function validateSearch() {
     if (origin.length !== 3 || destination.length !== 3) return '출발/도착 도시를 검색해 공항을 선택해주세요.'
     if (!departureDate) return '출발일을 선택해주세요.'
-    if (!arrivalDate) return '도착일을 선택해주세요.'
-    if (arrivalDate < departureDate) return '도착일은 출발일 이후로 선택해주세요.'
-    if (tripType === 'round-trip' && (!returnDate || returnDate <= departureDate)) return '귀국일은 출발일 이후로 선택해주세요.'
+    if (tripType === 'round-trip' && !returnDate) return '귀국일을 선택해주세요.'
+    if (tripType === 'round-trip' && returnDate <= departureDate) return '귀국일은 출발일 이후로 선택해주세요.'
     return null
   }
 
   function updateDepartureDate(value: string) {
     setDepartureDate(value)
-    if (!arrivalDate || arrivalDate < value) setArrivalDate(value)
+    if (returnDate && returnDate <= value) setReturnDate('')
   }
 
   async function handleSearch() {
@@ -271,22 +274,33 @@ function App() {
     setIsLoading(true)
     setError(null)
     setSelectedOffer(null)
+    setReturnOffers([])
+    setReturnResultMode(null)
     try {
-      const flightResult = await searchFlightOffers({
-        origin,
-        destination,
-        departureDate,
-        returnDate: tripType === 'round-trip' && returnDate ? returnDate : undefined,
-        adults: Number(adults) || 1,
-        currency,
-      })
+      const outboundQuery = { origin, destination, departureDate, adults: Number(adults) || 1, currency }
+      const flightResult = await searchFlightOffers(outboundQuery)
       setOffers(flightResult.offers)
       setResultMode(flightResult.mode)
+
+      if (tripType === 'round-trip' && returnDate) {
+        const returnResult = await searchFlightOffers({
+          origin: destination,
+          destination: origin,
+          departureDate: returnDate,
+          adults: Number(adults) || 1,
+          currency,
+        })
+        setReturnOffers(returnResult.offers)
+        setReturnResultMode(returnResult.mode)
+      }
+
       updateRecentRoutes({ origin, destination })
     } catch {
       setError('정보를 불러오지 못했어요. 백엔드를 확인해주세요.')
       setOffers([])
       setResultMode(null)
+      setReturnOffers([])
+      setReturnResultMode(null)
     } finally {
       setIsLoading(false)
     }
@@ -388,14 +402,10 @@ function App() {
                 출발일
                 <input type="date" value={departureDate} onChange={(event) => updateDepartureDate(event.target.value)} aria-label="출발일" />
               </label>
-              <label>
-                도착일
-                <input type="date" value={arrivalDate} min={departureDate} onChange={(event) => setArrivalDate(event.target.value)} aria-label="도착일" />
-              </label>
               {tripType === 'round-trip' ? (
                 <label>
                   귀국일
-                  <input type="date" value={returnDate} onChange={(event) => setReturnDate(event.target.value)} aria-label="귀국일" placeholder="선택" />
+                  <input type="date" value={returnDate} min={departureDate} onChange={(event) => setReturnDate(event.target.value)} aria-label="귀국일" placeholder="선택" />
                 </label>
               ) : null}
               <label>
@@ -430,7 +440,7 @@ function App() {
             <div>
               <p className="eyebrow">Route map</p>
               <h2>{airportLabel(origin)} 출발 · {airportLabel(destination)} 도착</h2>
-              <p>출발일 {departureDate || '선택 전'} · 도착일 {arrivalDate || '선택 전'} · {tripType === 'round-trip' ? '왕복' : '편도'}</p>
+              <p>출발일 {departureDate || '선택 전'}{tripType === 'round-trip' ? ` · 귀국일 ${returnDate || '선택 전'}` : ''} · {tripType === 'round-trip' ? '왕복' : '편도'}</p>
             </div>
             <div className="route-visual" aria-hidden="true">
               <span>{origin}</span>
@@ -463,6 +473,12 @@ function App() {
               </div>
             ) : (
               <div className="offer-list">
+                {tripType === 'round-trip' ? (
+                  <div className="offer-section-heading">
+                    <strong>가는 편</strong>
+                    <span>{currentSourceLabel}{currentMinimumPrice ? ` · ${currentMinimumPrice}` : ''}</span>
+                  </div>
+                ) : null}
                 {displayedOffers.map((offer) => (
                   <article className="offer-card" key={offer.id} aria-label={`${offer.airline} ${offer.origin} ${offer.destination}`}>
                     <div>
@@ -484,6 +500,35 @@ function App() {
                     </div>
                   </article>
                 ))}
+                {tripType === 'round-trip' ? (
+                  <>
+                    <div className="offer-section-heading">
+                      <strong>오는 편</strong>
+                      <span>{returnSourceLabel}{returnMinimumPrice ? ` · ${returnMinimumPrice}` : ''}</span>
+                    </div>
+                    {displayedReturnOffers.length > 0 ? displayedReturnOffers.map((offer) => (
+                      <article className="offer-card" key={offer.id} aria-label={`${offer.airline} ${offer.origin} ${offer.destination}`}>
+                        <div>
+                          <strong>{offer.airline}</strong>
+                          <p>{offer.origin} → {offer.destination}</p>
+                          <p>{formatFlightTime(offer)}</p>
+                          <small>{offer.stops === 0 ? '직항' : `${offer.stops}회 경유`} · 예약 사이트 연결</small>
+                          <div className="booking-links">
+                            {offer.booking_url ? (
+                              <a href={offer.booking_url} target="_blank" rel="noreferrer">Aviasales에서 보기</a>
+                            ) : null}
+                            <a href={bookingUrl(offer, 'google')} target="_blank" rel="noreferrer">Google Flights에서 보기</a>
+                            <a href={bookingUrl(offer, 'skyscanner')} target="_blank" rel="noreferrer">Skyscanner에서 보기</a>
+                          </div>
+                        </div>
+                        <div className="offer-action">
+                          <b>{formatCurrency(offer.price, offer.currency)}</b>
+                          <button type="button" className="ghost-button" onClick={() => setSelectedOffer(offer)}>상세 보기</button>
+                        </div>
+                      </article>
+                    )) : <p className="empty-return-message">귀국 항공편을 찾지 못했어요.</p>}
+                  </>
+                ) : null}
               </div>
             )}
           </section>

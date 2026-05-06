@@ -23,6 +23,7 @@ def test_search_flights_returns_normalized_fixture_offers(monkeypatch):
     body = response.json()
     assert body["mode"] == "fixture"
     assert body["query"]["origin"] == "ICN"
+    assert len(body["offers"]) >= 2
     assert body["offers"][0] == {
         "id": "fixture-icn-nrt-1",
         "airline": "Korean Air",

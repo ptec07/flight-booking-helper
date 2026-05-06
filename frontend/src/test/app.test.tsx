@@ -37,8 +37,31 @@ const flightResponse = {
   ],
 }
 
+const returnFlightResponse = {
+  mode: 'aviasales',
+  offers: [
+    {
+      id: 'aviasales-nrt-icn-1',
+      airline: 'Jeju Air',
+      origin: 'NRT',
+      destination: 'ICN',
+      departure_time: '2026-06-07T12:40:00+09:00',
+      arrival_time: '2026-06-07T15:20:00+09:00',
+      duration: '2h 40m',
+      stops: 0,
+      price: 240000,
+      currency: 'KRW',
+      booking_hint: 'Travelpayouts/Aviasales 가격 검색 결과입니다.',
+      booking_url: 'https://www.aviasales.com/search/NRT0706ICN1',
+    },
+  ],
+}
+
 function stubSearchFetch() {
-  const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => flightResponse })
+  const fetchMock = vi.fn((url: string) => {
+    const responseBody = url.includes('origin=NRT&destination=ICN') ? returnFlightResponse : flightResponse
+    return Promise.resolve({ ok: true, status: 200, json: async () => responseBody })
+  })
   vi.stubGlobal('fetch', fetchMock)
   return fetchMock
 }
@@ -60,9 +83,8 @@ describe('Flight Booking Helper app', () => {
     expect(screen.getByLabelText('성인 수')).toBeInTheDocument()
     expect(screen.getByLabelText('통화')).toBeInTheDocument()
     expect(screen.getByLabelText('출발일')).toHaveAttribute('type', 'date')
-    expect(screen.getByLabelText('도착일')).toHaveAttribute('type', 'date')
-    const dateInputs = [screen.getByLabelText('출발일'), screen.getByLabelText('도착일')]
-    expect(dateInputs[0].compareDocumentPosition(dateInputs[1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(screen.queryByLabelText('도착일')).not.toBeInTheDocument()
+    expect(screen.queryByText('도착일')).not.toBeInTheDocument()
     expect(screen.getByLabelText('정렬')).toBeInTheDocument()
     expect(screen.queryByLabelText('연동 상태')).not.toBeInTheDocument()
     expect(screen.queryByText('연동 상태')).not.toBeInTheDocument()
@@ -199,11 +221,21 @@ describe('Flight Booking Helper app', () => {
     render(<App />)
 
     await userEvent.click(screen.getByRole('button', { name: '왕복' }))
-    expect(screen.getByLabelText('도착일')).toBeInTheDocument()
+    expect(screen.queryByLabelText('도착일')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('귀국일')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: '항공권 검색' }))
+    expect(screen.getByText('귀국일을 선택해주세요.')).toBeInTheDocument()
+
     await userEvent.type(screen.getByLabelText('귀국일'), '2026-06-07')
     await userEvent.click(screen.getByRole('button', { name: '항공권 검색' }))
 
-    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('return_date=2026-06-07'))
+    expect(fetchMock).toHaveBeenCalledWith('/api/flights/search?origin=ICN&destination=NRT&departure_date=2026-06-01&adults=1&currency=KRW')
+    expect(fetchMock).toHaveBeenCalledWith('/api/flights/search?origin=NRT&destination=ICN&departure_date=2026-06-07&adults=1&currency=KRW')
+    expect(await screen.findByText('가는 편')).toBeInTheDocument()
+    expect(screen.getByText('오는 편')).toBeInTheDocument()
+    expect(screen.getByText('Korean Air')).toBeInTheDocument()
+    expect(screen.getByText('Jeju Air')).toBeInTheDocument()
+    expect(screen.getByText('NRT → ICN')).toBeInTheDocument()
   })
 
   it('opens detail dialog and saves a favorite flight to localStorage', async () => {

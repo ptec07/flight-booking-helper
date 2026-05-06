@@ -405,6 +405,26 @@ button:disabled {
   margin-top: 18px;
 }
 
+.offer-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  color: var(--ink);
+}
+
+.offer-section-heading strong {
+  font-size: 1.04rem;
+}
+
+.offer-section-heading span,
+.empty-return-message {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
 .offer-card {
   display: flex;
   align-items: center;

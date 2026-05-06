@@ -21,6 +21,15 @@ describe('deployment configuration', () => {
     expect(html).toContain('<title>SkyTrip</title>')
   })
 
+  it('installs the Travelpayouts site verification script in the document head', () => {
+    const html = readFileSync(resolve(__dirname, '../../index.html'), 'utf-8')
+
+    expect(html).toContain('https://emrldtp.cc/NTI1ODIy.js?t=525822')
+    expect(html).toContain('data-cfasync="false"')
+    expect(html).toContain('data-no-defer="1"')
+    expect(html).not.toContain('</script>.')
+  })
+
   it('documents Render backend deployment without frontend secrets', () => {
     const render = readFileSync(resolve(__dirname, '../../../render.yaml'), 'utf-8')
     const readme = readFileSync(resolve(__dirname, '../../../README.md'), 'utf-8')

@@ -21,13 +21,11 @@ describe('deployment configuration', () => {
     expect(html).toContain('<title>SkyTrip</title>')
   })
 
-  it('installs the Travelpayouts site verification script in the document head', () => {
+  it('does not ship an invalid Travelpayouts verification script that pollutes production console output', () => {
     const html = readFileSync(resolve(__dirname, '../../index.html'), 'utf-8')
 
-    expect(html).toContain('https://emrldtp.cc/NTI1ODIy.js?t=525822')
-    expect(html).toContain('data-cfasync="false"')
-    expect(html).toContain('data-no-defer="1"')
-    expect(html).not.toContain('</script>.')
+    expect(html).not.toContain('https://emrldtp.cc/NTI1ODIy.js?t=525822')
+    expect(html).not.toContain('entrypoint_config')
   })
 
   it('documents Render backend deployment without frontend secrets', () => {

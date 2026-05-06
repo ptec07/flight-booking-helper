@@ -8,13 +8,13 @@ def get_recommended_api_candidates() -> list[dict[str, str]]:
     return [
         {
             "role": "flight_search",
-            "name": "Amadeus for Developers",
+            "name": "Kiwi Tequila",
             "category": "Transportation",
-            "auth": "OAuth",
+            "auth": "apiKey",
             "https": "Yes",
             "cors": "Unknown",
             "integration": "backend_proxy",
-            "url": "https://developers.amadeus.com/self-service",
+            "url": "https://tequila.kiwi.com/portal/docs/tequila_api",
         },
         {
             "role": "aircraft_status",

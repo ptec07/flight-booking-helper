@@ -2,6 +2,7 @@ from app.services.flight_search import search_flights
 
 
 def test_search_flights_uses_fixture_when_amadeus_credentials_are_missing(monkeypatch):
+    monkeypatch.delenv("KIWI_TEQUILA_API_KEY", raising=False)
     monkeypatch.delenv("AMADEUS_CLIENT_ID", raising=False)
     monkeypatch.delenv("AMADEUS_CLIENT_SECRET", raising=False)
 
@@ -20,6 +21,7 @@ def test_search_flights_uses_fixture_when_amadeus_credentials_are_missing(monkey
 
 
 def test_search_flights_uses_amadeus_when_credentials_are_present(monkeypatch):
+    monkeypatch.delenv("KIWI_TEQUILA_API_KEY", raising=False)
     monkeypatch.setenv("AMADEUS_CLIENT_ID", "client-id")
     monkeypatch.setenv("AMADEUS_CLIENT_SECRET", "client-secret")
 
@@ -50,6 +52,7 @@ def test_search_flights_uses_amadeus_when_credentials_are_present(monkeypatch):
 
 
 def test_search_flights_falls_back_to_fixture_when_amadeus_fails(monkeypatch):
+    monkeypatch.delenv("KIWI_TEQUILA_API_KEY", raising=False)
     monkeypatch.setenv("AMADEUS_CLIENT_ID", "client-id")
     monkeypatch.setenv("AMADEUS_CLIENT_SECRET", "client-secret")
 

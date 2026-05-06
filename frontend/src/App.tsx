@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { getTripContext, searchFlightOffers, type FlightOffer, type TripContext } from './api'
 
-const apiBadges = ['Amadeus', 'Open-Meteo', '환율', '백업 데이터']
+const apiBadges = ['Kiwi Tequila', 'Open-Meteo', '환율', '백업 데이터']
 const favoriteStorageKey = 'skytrip:favorites'
 type TripType = 'one-way' | 'round-trip'
 
@@ -281,6 +281,9 @@ function App() {
                   <p>{formatFlightTime(offer)}</p>
                   <small>{offer.stops === 0 ? '직항' : `${offer.stops}회 경유`} · 예약 사이트 연결</small>
                   <div className="booking-links">
+                    {offer.booking_url ? (
+                      <a href={offer.booking_url} target="_blank" rel="noreferrer">Kiwi에서 보기</a>
+                    ) : null}
                     <a href={bookingUrl(offer, 'google')} target="_blank" rel="noreferrer">Google Flights에서 보기</a>
                     <a href={bookingUrl(offer, 'skyscanner')} target="_blank" rel="noreferrer">Skyscanner에서 보기</a>
                   </div>

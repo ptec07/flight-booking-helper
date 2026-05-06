@@ -33,7 +33,8 @@ def test_search_flights_returns_normalized_fixture_offers():
         "stops": 0,
         "price": 280000,
         "currency": "KRW",
-        "booking_hint": "Amadeus/항공사 예약 링크 연동 전 fixture 후보",
+        "booking_hint": "Kiwi Tequila/예약 사이트 연동 전 fixture 후보",
+        "booking_url": None,
     }
 
 

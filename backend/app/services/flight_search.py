@@ -1,6 +1,7 @@
 import os
 
 from app.services.amadeus import AmadeusClient, AmadeusCredentials, AmadeusFlightSearchQuery
+from app.services.kiwi_tequila import KiwiTequilaClient, KiwiTequilaFlightSearchQuery
 
 
 def search_fixture_flights(query: dict) -> list[dict]:
@@ -21,7 +22,8 @@ def search_fixture_flights(query: dict) -> list[dict]:
                 "stops": 0,
                 "price": 280000 if currency == "KRW" else 210,
                 "currency": currency,
-                "booking_hint": "Amadeus/항공사 예약 링크 연동 전 fixture 후보",
+                "booking_hint": "Kiwi Tequila/예약 사이트 연동 전 fixture 후보",
+                "booking_url": None,
             }
         ]
 
@@ -37,12 +39,36 @@ def search_fixture_flights(query: dict) -> list[dict]:
             "stops": 0,
             "price": 320000 if currency == "KRW" else 240,
             "currency": currency,
-            "booking_hint": "실제 Amadeus 연동 전 generic fixture 후보",
+            "booking_hint": "실제 Kiwi Tequila 연동 전 generic fixture 후보",
+            "booking_url": None,
         }
     ]
 
 
 def search_flights(query: dict) -> dict:
+    kiwi_key = os.getenv("KIWI_TEQUILA_API_KEY", "").strip()
+    if kiwi_key:
+        kiwi_query = KiwiTequilaFlightSearchQuery(
+            origin=query["origin"],
+            destination=query["destination"],
+            departure_date=query["departure_date"],
+            return_date=query.get("return_date"),
+            adults=query.get("adults", 1),
+            currency=query.get("currency", "KRW"),
+        )
+        try:
+            offers = KiwiTequilaClient(
+                api_key=kiwi_key,
+                base_url=os.getenv("KIWI_TEQUILA_BASE_URL", "https://api.tequila.kiwi.com"),
+            ).search_flight_offers(kiwi_query)
+            return {"mode": "kiwi-tequila", "offers": offers}
+        except Exception:
+            return {
+                "mode": "kiwi-fallback",
+                "offers": search_fixture_flights(query),
+                "warning": "Kiwi Tequila search failed; returned fixture offers.",
+            }
+
     client_id = os.getenv("AMADEUS_CLIENT_ID", "").strip()
     client_secret = os.getenv("AMADEUS_CLIENT_SECRET", "").strip()
     if not client_id or not client_secret:

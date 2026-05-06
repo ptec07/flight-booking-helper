@@ -10,6 +10,7 @@ export type FlightOffer = {
   price: number
   currency: string
   booking_hint: string
+  booking_url?: string | null
 }
 
 export type FlightSearchResponse = {

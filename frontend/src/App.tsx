@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import { getTripContext, searchFlightOffers, type FlightOffer, type TripContext } from './api'
 import { airportDisplayName, findAirportByCode, searchAirports, type Airport } from './airports'
 
-const apiBadges = ['Aviasales', 'Open-Meteo', '환율']
 const favoriteStorageKey = 'skytrip:favorites'
 const recentRoutesStorageKey = 'skytrip:recent-routes'
 type TripType = 'one-way' | 'round-trip'
@@ -342,14 +341,6 @@ function App() {
           <p className="eyebrow">Flight helper</p>
           <h1>SkyTrip</h1>
           <p className="hero-copy">항공권·날씨·환율을 한 번에 확인하세요.</p>
-        </div>
-        <div className="api-panel" aria-label="연동 상태">
-          <p>연동 상태</p>
-          <div className="api-badges">
-            {apiBadges.map((badge) => (
-              <span key={badge}>{badge}</span>
-            ))}
-          </div>
         </div>
       </section>
 

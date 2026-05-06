@@ -140,35 +140,6 @@ h2 {
   line-height: 1.55;
 }
 
-.api-panel {
-  display: grid;
-  gap: 10px;
-}
-
-.api-panel > p {
-  color: var(--muted);
-  font-size: 0.82rem;
-  font-weight: 800;
-  text-align: right;
-}
-
-.api-badges {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.api-badges span {
-  border: 1px solid var(--sky-200);
-  border-radius: 999px;
-  background: #ffffff;
-  color: var(--sky-600);
-  padding: 8px 12px;
-  font-size: 0.86rem;
-  font-weight: 800;
-}
-
 .flight-map-card {
   display: grid;
   gap: 22px;
@@ -795,14 +766,6 @@ button:disabled {
     flex-direction: column;
   }
 
-  .api-panel > p {
-    text-align: left;
-  }
-
-  .api-badges {
-    justify-content: flex-start;
-  }
-
   .saved-header,
   .saved-tools,
   .saved-actions,
@@ -841,11 +804,6 @@ button:disabled {
 
   h1 {
     font-size: clamp(2.35rem, 15vw, 3.35rem);
-  }
-
-  .api-badges span {
-    padding: 7px 10px;
-    font-size: 0.78rem;
   }
 
   .input-grid,

@@ -74,13 +74,24 @@ def test_trip_context_has_airport_metadata_for_popular_catalog_codes():
     popular_codes = {
         "ICN", "GMP", "PUS", "CJU", "NRT", "HND", "KIX", "FUK", "CTS",
         "BKK", "DMK", "SIN", "CXR", "DAD", "SGN", "HAN", "PQC", "HKT", "CNX",
-        "TPE", "HKG", "MNL", "CRK", "MPH", "DPS", "KUL", "GUM", "SPN", "CEB",
+        "TPE", "HKG", "MNL", "CRK", "MPH", "DPS", "KUL", "DOH", "GUM", "SPN", "CEB",
         "JFK", "LAX", "SFO", "LHR", "CDG",
     }
 
     missing_codes = sorted(popular_codes - set(AIRPORT_FIXTURES))
 
     assert missing_codes == []
+
+
+def test_trip_context_has_airport_metadata_for_generated_global_codes():
+    from app.services.trip_context import AIRPORT_FIXTURES
+
+    assert len(AIRPORT_FIXTURES) >= 4000
+    assert AIRPORT_FIXTURES["ZRH"]["city"] == "Zurich"
+    assert AIRPORT_FIXTURES["IST"]["city"] == "Istanbul"
+    assert AIRPORT_FIXTURES["CAI"]["city"] == "Cairo"
+    assert AIRPORT_FIXTURES["LIM"]["city"] == "Lima"
+    assert AIRPORT_FIXTURES["DOH"]["city"] == "Doha"
 
 
 def test_trip_context_can_use_live_no_auth_public_api_wrappers(monkeypatch):

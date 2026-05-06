@@ -1,3 +1,5 @@
+import generatedAirports from './generated/airports.generated.json'
+
 export type Airport = {
   code: string
   cityKo: string
@@ -6,9 +8,15 @@ export type Airport = {
   airportEn: string
   countryKo: string
   aliases: string[]
+  icao?: string
+  countryCode?: string
+  lat?: number
+  lon?: number
+  type?: string
+  scheduledService?: boolean
 }
 
-export const airports: Airport[] = [
+const popularAirports: Airport[] = [
   { code: 'ICN', cityKo: '서울', cityEn: 'Seoul', airportKo: '인천국제공항', airportEn: 'Incheon International Airport', countryKo: '대한민국', aliases: ['서울', '인천', '인천공항', '인천국제공항', 'seoul', 'incheon', 'icn'] },
   { code: 'GMP', cityKo: '서울', cityEn: 'Seoul', airportKo: '김포공항', airportEn: 'Gimpo International Airport', countryKo: '대한민국', aliases: ['서울', '김포', '김포공항', 'gimpo', 'seoul', 'gmp'] },
   { code: 'PUS', cityKo: '부산', cityEn: 'Busan', airportKo: '김해공항', airportEn: 'Gimhae International Airport', countryKo: '대한민국', aliases: ['부산', '김해', '김해공항', 'busan', 'gimhae', 'pus'] },
@@ -35,6 +43,7 @@ export const airports: Airport[] = [
   { code: 'MPH', cityKo: '보라카이', cityEn: 'Boracay', airportKo: '카티클란공항', airportEn: 'Godofredo P. Ramos Airport', countryKo: '필리핀', aliases: ['보라카이', '카티클란', 'boracay', 'caticlan', 'mph'] },
   { code: 'DPS', cityKo: '발리', cityEn: 'Bali', airportKo: '응우라라이공항', airportEn: 'Ngurah Rai International Airport', countryKo: '인도네시아', aliases: ['발리', '덴파사르', 'bali', 'denpasar', 'dps'] },
   { code: 'KUL', cityKo: '쿠알라룸푸르', cityEn: 'Kuala Lumpur', airportKo: '쿠알라룸푸르공항', airportEn: 'Kuala Lumpur International Airport', countryKo: '말레이시아', aliases: ['쿠알라룸푸르', '쿠알라', 'kuala lumpur', 'kl', 'kul'] },
+  { code: 'DOH', cityKo: '도하', cityEn: 'Doha', airportKo: '하마드공항', airportEn: 'Hamad International Airport', countryKo: '카타르', aliases: ['도하', 'doha', 'hamad', '하마드', 'doh'] },
   { code: 'GUM', cityKo: '괌', cityEn: 'Guam', airportKo: '괌 안토니오 B. 원 팻 공항', airportEn: 'Antonio B. Won Pat International Airport', countryKo: '미국령 괌', aliases: ['괌', 'guam', 'gum'] },
   { code: 'SPN', cityKo: '사이판', cityEn: 'Saipan', airportKo: '사이판공항', airportEn: 'Saipan International Airport', countryKo: '북마리아나제도', aliases: ['사이판', 'saipan', 'spn'] },
   { code: 'CEB', cityKo: '세부', cityEn: 'Cebu', airportKo: '막탄 세부공항', airportEn: 'Mactan-Cebu International Airport', countryKo: '필리핀', aliases: ['세부', '막탄', 'cebu', 'mactan', 'ceb'] },
@@ -45,8 +54,20 @@ export const airports: Airport[] = [
   { code: 'CDG', cityKo: '파리', cityEn: 'Paris', airportKo: '샤를드골공항', airportEn: 'Charles de Gaulle Airport', countryKo: '프랑스', aliases: ['파리', '샤를드골', 'paris', 'charles de gaulle', 'cdg'] },
 ]
 
+const popularCodes = new Set(popularAirports.map((airport) => airport.code))
+
+export const airports: Airport[] = [
+  ...popularAirports,
+  ...(generatedAirports as Airport[]).filter((airport) => !popularCodes.has(airport.code)),
+]
+
 function normalize(value: string) {
-  return value.trim().toLowerCase().replace(/\s+/g, ' ')
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
 }
 
 function airportText(airport: Airport) {
@@ -55,25 +76,35 @@ function airportText(airport: Airport) {
     .join(' ')
 }
 
+const airportSearchIndex = airports.map((airport, index) => ({
+  airport,
+  index,
+  text: airportText(airport),
+  aliases: airport.aliases.map(normalize),
+  code: airport.code.toLowerCase(),
+}))
+
+const airportsByCode = new Map(airports.map((airport) => [airport.code, airport]))
+
 export function airportDisplayName(airport: Airport) {
   return `${airport.cityKo} · ${airport.code}`
 }
 
 export function findAirportByCode(code: string) {
   const normalizedCode = normalize(code).toUpperCase()
-  return airports.find((airport) => airport.code === normalizedCode)
+  return airportsByCode.get(normalizedCode)
 }
 
 export function searchAirports(query: string, limit = 6) {
   const normalizedQuery = normalize(query)
   if (!normalizedQuery) return []
 
-  return airports
-    .map((airport, index) => {
-      const exactCode = airport.code.toLowerCase() === normalizedQuery
-      const exactAlias = airport.aliases.some((alias) => normalize(alias) === normalizedQuery)
-      const startsWithAlias = airport.aliases.some((alias) => normalize(alias).startsWith(normalizedQuery))
-      const contains = airportText(airport).includes(normalizedQuery)
+  return airportSearchIndex
+    .map(({ airport, index, text, aliases, code }) => {
+      const exactCode = code === normalizedQuery
+      const exactAlias = aliases.some((alias) => alias === normalizedQuery)
+      const startsWithAlias = aliases.some((alias) => alias.startsWith(normalizedQuery))
+      const contains = text.includes(normalizedQuery)
       const score = exactCode ? 100 : exactAlias ? 80 : startsWithAlias ? 60 : contains ? 30 : 0
       return { airport, score, index }
     })

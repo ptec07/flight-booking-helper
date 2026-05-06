@@ -12,10 +12,20 @@ describe('airport catalog search', () => {
     expect(searchAirports('nha trang')[0]).toMatchObject({ code: 'CXR', cityKo: '나트랑' })
   })
 
+  it('searches the generated global IATA airport catalog beyond the manual popular list', () => {
+    expect(searchAirports('zurich')[0]).toMatchObject({ code: 'ZRH' })
+    expect(searchAirports('istanbul')[0]).toMatchObject({ code: 'IST' })
+    expect(searchAirports('cairo')[0]).toMatchObject({ code: 'CAI' })
+    expect(searchAirports('lima')[0]).toMatchObject({ code: 'LIM' })
+    expect(searchAirports('doha')[0]).toMatchObject({ code: 'DOH' })
+    expect(searchAirports('sao paulo').map((airport) => airport.code)).toEqual(expect.arrayContaining(['GRU']))
+  })
+
   it('limits noisy results and supports exact code lookup', () => {
     expect(searchAirports('')).toEqual([])
     expect(searchAirports('a')).toHaveLength(6)
     expect(findAirportByCode('nrt')).toMatchObject({ code: 'NRT', cityKo: '도쿄' })
+    expect(findAirportByCode('zrh')).toMatchObject({ code: 'ZRH', cityEn: 'Zurich' })
   })
 
   it('covers popular Korean outbound city aliases in the local catalog', () => {

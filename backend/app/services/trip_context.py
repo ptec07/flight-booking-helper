@@ -1,6 +1,30 @@
+import json
+from pathlib import Path
+
 from app.services.live_public_apis import fetch_exchange_rate, fetch_open_meteo_weather
 
-AIRPORT_FIXTURES = {
+
+def _load_generated_airports() -> dict[str, dict]:
+    path = Path(__file__).resolve().parent.parent / "data" / "airports.generated.json"
+    try:
+        airports = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return {}
+    return {
+        airport["code"]: {
+            "iata": airport["code"],
+            "icao": airport.get("icao") or airport["code"],
+            "name": airport.get("airportEn") or airport.get("airportKo") or "Unknown airport",
+            "city": airport.get("cityEn") or airport.get("cityKo") or "Unknown",
+            "lat": airport.get("lat") or 0,
+            "lon": airport.get("lon") or 0,
+        }
+        for airport in airports
+        if airport.get("code")
+    }
+
+
+POPULAR_AIRPORT_FIXTURES = {
     "NRT": {"iata": "NRT", "icao": "RJAA", "name": "Narita International Airport", "city": "Tokyo", "lat": 35.7719, "lon": 140.3929},
     "HND": {"iata": "HND", "icao": "RJTT", "name": "Tokyo Haneda Airport", "city": "Tokyo", "lat": 35.5494, "lon": 139.7798},
     "KIX": {"iata": "KIX", "icao": "RJBB", "name": "Kansai International Airport", "city": "Osaka", "lat": 34.4347, "lon": 135.2442},
@@ -28,6 +52,7 @@ AIRPORT_FIXTURES = {
     "MPH": {"iata": "MPH", "icao": "RPVE", "name": "Godofredo P. Ramos Airport", "city": "Boracay", "lat": 11.9245, "lon": 121.9541},
     "DPS": {"iata": "DPS", "icao": "WADD", "name": "Ngurah Rai International Airport", "city": "Bali", "lat": -8.7482, "lon": 115.1672},
     "KUL": {"iata": "KUL", "icao": "WMKK", "name": "Kuala Lumpur International Airport", "city": "Kuala Lumpur", "lat": 2.7456, "lon": 101.7072},
+    "DOH": {"iata": "DOH", "icao": "OTHH", "name": "Hamad International Airport", "city": "Doha", "lat": 25.2731, "lon": 51.6081},
     "GUM": {"iata": "GUM", "icao": "PGUM", "name": "Antonio B. Won Pat International Airport", "city": "Guam", "lat": 13.4839, "lon": 144.7973},
     "SPN": {"iata": "SPN", "icao": "PGSN", "name": "Saipan International Airport", "city": "Saipan", "lat": 15.1190, "lon": 145.7294},
     "CEB": {"iata": "CEB", "icao": "RPVM", "name": "Mactan-Cebu International Airport", "city": "Cebu", "lat": 10.3075, "lon": 123.9794},
@@ -36,6 +61,9 @@ AIRPORT_FIXTURES = {
     "LHR": {"iata": "LHR", "icao": "EGLL", "name": "Heathrow Airport", "city": "London", "lat": 51.4700, "lon": -0.4543},
     "CDG": {"iata": "CDG", "icao": "LFPG", "name": "Charles de Gaulle Airport", "city": "Paris", "lat": 49.0097, "lon": 2.5479},
 }
+
+
+AIRPORT_FIXTURES = _load_generated_airports() | POPULAR_AIRPORT_FIXTURES
 
 
 def fixture_forecast() -> list[dict]:

@@ -24,6 +24,7 @@
   - 공항 코드 자동 대문자 보정, 인기 노선 빠른 선택, 날짜 검증, 검색 조건 요약
   - `/api/flights/search`, `/api/trip/context` FastAPI 호출
   - 도착지 3일 날씨, 강수 확률, 환율 기준 시각, 여행 코멘트 표시
+  - OurAirports 기반 전세계 IATA 공항 약 9,000개 검색 + 한국어 인기 여행지 alias 보강
   - Aviasales / Google Flights / Skyscanner 검색 링크 연결
   - 항공권 상세 보기 모달
   - 관심 항공편 localStorage 저장
@@ -82,6 +83,22 @@ npm test -- --run
 npm run build
 npm run dev
 ```
+
+## 공항 카탈로그 갱신
+
+전세계 공항 검색은 OurAirports CSV에서 IATA 코드가 있는 공항을 generated JSON으로 만든 뒤, 한국어 인기 여행지 alias를 수동 카탈로그로 덮어씁니다.
+
+```bash
+cd /home/ptec07/.hermes/hermes-agent/workforce/flight-booking-helper
+node scripts/generate-airports.mjs
+```
+
+생성 파일:
+
+- `frontend/src/generated/airports.generated.json`
+- `backend/app/data/airports.generated.json`
+
+Frontend 검색은 generated catalog와 한국어 alias catalog를 병합하고, backend 여행정보도 같은 generated 좌표/ICAO 데이터를 사용합니다.
 
 ## 배포 메모
 

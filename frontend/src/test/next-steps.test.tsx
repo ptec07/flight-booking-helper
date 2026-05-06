@@ -17,7 +17,7 @@ const flightResponse = {
       stops: 0,
       price: 280000,
       currency: 'KRW',
-      booking_hint: 'Kiwi Tequila/예약 사이트 연동 전 fixture 후보',
+      booking_hint: 'Travelpayouts/Aviasales 연동 전 fixture 후보',
       booking_url: null,
     },
   ],

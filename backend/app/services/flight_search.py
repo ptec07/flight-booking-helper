@@ -2,6 +2,7 @@ import os
 
 from app.services.amadeus import AmadeusClient, AmadeusCredentials, AmadeusFlightSearchQuery
 from app.services.kiwi_tequila import KiwiTequilaClient, KiwiTequilaFlightSearchQuery
+from app.services.travelpayouts_aviasales import AviasalesClient, AviasalesFlightSearchQuery
 
 
 def search_fixture_flights(query: dict) -> list[dict]:
@@ -22,7 +23,7 @@ def search_fixture_flights(query: dict) -> list[dict]:
                 "stops": 0,
                 "price": 280000 if currency == "KRW" else 210,
                 "currency": currency,
-                "booking_hint": "Kiwi Tequila/예약 사이트 연동 전 fixture 후보",
+                "booking_hint": "Travelpayouts/Aviasales 연동 전 fixture 후보",
                 "booking_url": None,
             }
         ]
@@ -39,13 +40,37 @@ def search_fixture_flights(query: dict) -> list[dict]:
             "stops": 0,
             "price": 320000 if currency == "KRW" else 240,
             "currency": currency,
-            "booking_hint": "실제 Kiwi Tequila 연동 전 generic fixture 후보",
+            "booking_hint": "실제 Travelpayouts/Aviasales 연동 전 generic fixture 후보",
             "booking_url": None,
         }
     ]
 
 
 def search_flights(query: dict) -> dict:
+    travelpayouts_token = os.getenv("TRAVELPAYOUTS_API_TOKEN", "").strip()
+    if travelpayouts_token:
+        aviasales_query = AviasalesFlightSearchQuery(
+            origin=query["origin"],
+            destination=query["destination"],
+            departure_date=query["departure_date"],
+            return_date=query.get("return_date"),
+            adults=query.get("adults", 1),
+            currency=query.get("currency", "KRW"),
+        )
+        try:
+            offers = AviasalesClient(
+                token=travelpayouts_token,
+                marker=os.getenv("TRAVELPAYOUTS_MARKER", "").strip() or None,
+                base_url=os.getenv("TRAVELPAYOUTS_BASE_URL", "https://api.travelpayouts.com"),
+            ).search_flight_offers(aviasales_query)
+            return {"mode": "aviasales", "offers": offers}
+        except Exception:
+            return {
+                "mode": "aviasales-fallback",
+                "offers": search_fixture_flights(query),
+                "warning": "Travelpayouts/Aviasales search failed; returned fixture offers.",
+            }
+
     kiwi_key = os.getenv("KIWI_TEQUILA_API_KEY", "").strip()
     if kiwi_key:
         kiwi_query = KiwiTequilaFlightSearchQuery(

@@ -29,7 +29,7 @@ describe('deployment configuration', () => {
     expect(render).toContain('uvicorn app.main:app')
     expect(readme).toContain('Frontend: Vercel')
     expect(readme).toContain('Backend: Render')
-    expect(readme).toContain('KIWI_TEQUILA_API_KEY')
+    expect(readme).toContain('TRAVELPAYOUTS_API_TOKEN')
     expect(readme).toContain('프론트엔드에 노출하지 않습니다')
   })
 })

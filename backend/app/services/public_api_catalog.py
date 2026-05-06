@@ -8,13 +8,13 @@ def get_recommended_api_candidates() -> list[dict[str, str]]:
     return [
         {
             "role": "flight_search",
-            "name": "Kiwi Tequila",
+            "name": "Travelpayouts / Aviasales",
             "category": "Transportation",
             "auth": "apiKey",
             "https": "Yes",
             "cors": "Unknown",
             "integration": "backend_proxy",
-            "url": "https://tequila.kiwi.com/portal/docs/tequila_api",
+            "url": "https://support.travelpayouts.com/hc/en-us/articles/360000343268-Data-API",
         },
         {
             "role": "aircraft_status",

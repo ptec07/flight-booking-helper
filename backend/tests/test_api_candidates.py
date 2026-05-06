@@ -7,6 +7,6 @@ def test_flight_booking_candidates_include_verified_public_api_roles():
     roles = {candidate["role"] for candidate in candidates}
     assert {"flight_search", "aircraft_status", "weather", "currency", "airport_info"}.issubset(roles)
 
-    kiwi = next(candidate for candidate in candidates if candidate["name"] == "Kiwi Tequila")
-    assert kiwi["auth"] == "apiKey"
-    assert kiwi["integration"] == "backend_proxy"
+    aviasales = next(candidate for candidate in candidates if candidate["name"] == "Travelpayouts / Aviasales")
+    assert aviasales["auth"] == "apiKey"
+    assert aviasales["integration"] == "backend_proxy"

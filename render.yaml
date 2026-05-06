@@ -6,6 +6,12 @@ services:
     buildCommand: pip install -e .
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
+      - key: TRAVELPAYOUTS_BASE_URL
+        value: https://api.travelpayouts.com
+      - key: TRAVELPAYOUTS_API_TOKEN
+        sync: false
+      - key: TRAVELPAYOUTS_MARKER
+        sync: false
       - key: KIWI_TEQUILA_BASE_URL
         value: https://api.tequila.kiwi.com
       - key: KIWI_TEQUILA_API_KEY
